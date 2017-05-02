@@ -78,6 +78,7 @@ LIB_OBJS = api.o                    \
            nodes.o                  \
            params.o                 \
            serialize.o              \
+           timeline.o               \
            transforms.o             \
            utils.o                  \
 

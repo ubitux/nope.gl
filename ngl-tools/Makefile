@@ -44,11 +44,12 @@ TOOLS_LDLIBS += $(shell $(PKG_CONFIG) --libs   gl)
 endif
 endif
 
-TOOLS = ngl-player$(EXESUF) ngl-render$(EXESUF)
+TOOLS = ngl-player$(EXESUF) ngl-render$(EXESUF) ngl-timeline$(EXESUF)
 
 all: $(TOOLS)
 ngl-player$(EXESUF): ngl-player.o
 ngl-render$(EXESUF): ngl-render.o
+ngl-timeline$(EXESUF): ngl-timeline.o
 
 $(TOOLS): CFLAGS = $(PROJECT_CFLAGS) $(TOOLS_CFLAGS)
 $(TOOLS): LDLIBS = $(PROJECT_LDLIBS) $(TOOLS_LDLIBS)
@@ -58,6 +59,7 @@ $(TOOLS):
 clean:
 	$(RM) ngl-player.o ngl-player$(EXESUF)
 	$(RM) ngl-render.o ngl-render$(EXESUF)
+	$(RM) ngl-timeline.o ngl-timeline$(EXESUF)
 
 install: $(TOOLS)
 	install -d $(DESTDIR)$(PREFIX)/bin

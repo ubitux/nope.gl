@@ -178,6 +178,15 @@ cdef class _Node:
             free(s)
         return pystr
 
+    def timeline(self):
+        cdef char *s
+        s = ngl_node_graph_timeline(self.ctx)
+        try:
+            pystr = <bytes>s
+        finally:
+            free(s)
+        return pystr
+
     def __dealloc__(self):
         ngl_node_unrefp(&self.ctx)
 '''

@@ -422,6 +422,8 @@ class _GLView(QtWidgets.QWidget):
             self._slider.setRange(0, self._scene_duration * self.RENDERING_FPS)
             self._update_tick(self._tick)
 
+            open('/tmp/test.html', 'w').write(scene.timeline())
+
     def __init__(self, get_scene_func, default_ar, default_samples):
         super(_GLView, self).__init__()
 
