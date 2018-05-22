@@ -171,6 +171,7 @@ struct buffer {
     int data_stride;        // stride of 1 element, in bytes
     GLenum data_comp_type;  // type of a single component: integer, float, ...
     GLenum usage;
+    int mmap_data;          // 1 if <data> is mmap'ed, 0 otherwise
 
     /* animatedbuffer */
     struct ngl_node **animkf;

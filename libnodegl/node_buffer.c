@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include "log.h"
 #include "nodegl.h"
 #include "nodes.h"
@@ -115,20 +116,13 @@ static int buffer_init_from_filename(struct ngl_node *node)
         return -1;
     }
 
-    s->data = calloc(s->count, s->data_stride);
-    if (!s->data)
-        return -1;
-
-    ssize_t n = read(s->fd, s->data, s->data_size);
-    if (n < 0) {
-        LOG(ERROR, "could not read '%s': %zd", s->filename, n);
+    void *pmap = mmap(NULL, s->data_size, PROT_READ, MAP_PRIVATE, s->fd, 0);
+    if (pmap == MAP_FAILED) {
+        LOG(ERROR, "unable to map '%s' with size %d", s->filename, s->data_size);
         return -1;
     }
-
-    if (n != s->data_size) {
-        LOG(ERROR, "read %zd bytes does not match expected size of %d bytes", n, s->data_size);
-        return -1;
-    }
+    s->data = pmap;
+    s->mmap_data = 1;
 
     return 0;
 }
@@ -230,6 +224,12 @@ static void buffer_uninit(struct ngl_node *node)
     const struct glfunctions *gl = &glcontext->funcs;
 
     struct buffer *s = node->priv_data;
+
+    if (s->mmap_data && s->data) {
+        munmap(s->data, s->data_size);
+        s->mmap_data = 0;
+        s->data = NULL; // prevent a free from the params management
+    }
 
     if (s->filename && s->fd) {
         int ret = close(s->fd);
