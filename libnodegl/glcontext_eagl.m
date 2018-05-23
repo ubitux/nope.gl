@@ -71,10 +71,21 @@ static void glcontext_eagl_uninit(struct glcontext *glcontext)
 
     if (glcontext_eagl->texture_cache)
         CFRelease(glcontext_eagl->texture_cache);
+
+    if (glcontext->wrapped) {
+        if (glcontext_eagl->handle)
+            CFRelease(glcontext_eagl->handle);
+    }
 }
 
 static int glcontext_eagl_create(struct glcontext *glcontext, void *other)
 {
+    struct glcontext_eagl *glcontext_eagl = glcontext->priv_data;
+
+    glcontext_eagl->handle = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    if (!glcontext_eagl->handle)
+        return -1;
+
     return 0;
 }
 
