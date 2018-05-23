@@ -27,6 +27,7 @@
 
 struct glcontext_egl {
     EGLDisplay display;
+    EGLNativeWindowType window;
     EGLSurface surface;
     EGLContext handle;
     EGLConfig config;
@@ -36,12 +37,33 @@ static int glcontext_egl_init(struct glcontext *glcontext, void *display, void *
 {
     struct glcontext_egl *glcontext_egl = glcontext->priv_data;
 
-    glcontext_egl->display = display ? *(EGLDisplay *)display : eglGetCurrentDisplay();
-    glcontext_egl->surface = window  ? *(EGLSurface *)window  : eglGetCurrentSurface(EGL_DRAW);
+    if (display)
+        glcontext_egl->display = *(EGLDisplay *)display;
+
+    if (!glcontext_egl->display)
+        glcontext_egl->display = eglGetCurrentDisplay();
+
+    if (!glcontext_egl->display)
+        glcontext_egl->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
+    if (window)
+        glcontext_egl->window = *(EGLNativeWindowType *)window;
+
+    if (glcontext->wrapped)
+        glcontext_egl->surface = eglGetCurrentSurface(EGL_DRAW);
+
     glcontext_egl->handle  = handle  ? *(EGLContext *)handle  : eglGetCurrentContext();
 
-    if (!glcontext_egl->display || !glcontext_egl->surface || !glcontext_egl->handle)
-        return -1;
+    if (glcontext->wrapped) {
+        if (!glcontext_egl->display ||
+            !glcontext_egl->surface ||
+            !glcontext_egl->handle)
+            return -1;
+    } else {
+        if (!glcontext_egl->display ||
+            !glcontext_egl->window)
+            return -1;
+    }
 
     return 0;
 }
@@ -51,9 +73,10 @@ static void glcontext_egl_uninit(struct glcontext *glcontext)
     struct glcontext_egl *glcontext_egl = glcontext->priv_data;
 
     if (!glcontext->wrapped) {
-
-        eglDestroySurface(glcontext_egl->display, glcontext_egl->surface);
-        eglDestroyContext(glcontext_egl->display, glcontext_egl->handle);
+        if (glcontext_egl->surface)
+            eglDestroySurface(glcontext_egl->display, glcontext_egl->surface);
+        if (glcontext_egl->handle)
+            eglDestroyContext(glcontext_egl->display, glcontext_egl->handle);
     }
 }
 
@@ -65,30 +88,19 @@ static int glcontext_egl_create(struct glcontext *glcontext, void *other)
 
     const EGLint config_attribs[] = {
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
+        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
         EGL_RED_SIZE,   8,
         EGL_GREEN_SIZE, 8,
         EGL_BLUE_SIZE,  8,
         EGL_ALPHA_SIZE, 8,
+        EGL_DEPTH_SIZE, 16,
+        EGL_STENCIL_SIZE, 8,
+        EGL_NONE, EGL_NONE,
         EGL_NONE
     };
 
     const EGLint ctx_attribs[] = {
         EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE
-    };
-
-    EGLint width;
-    EGLint height;
-
-    if (!eglQuerySurface(glcontext_egl->display, glcontext_egl->surface, EGL_WIDTH, &width) ||
-        !eglQuerySurface(glcontext_egl->display, glcontext_egl->surface, EGL_HEIGHT, &height)) {
-        return -1;
-    }
-
-    const EGLint surface_attribs[] = {
-        EGL_WIDTH, width,
-        EGL_HEIGHT, height,
         EGL_NONE
     };
 
@@ -114,8 +126,8 @@ static int glcontext_egl_create(struct glcontext *glcontext, void *other)
         return -1;
     }
 
-    glcontext_egl->surface = eglCreatePbufferSurface(glcontext_egl->display, config, surface_attribs);
-    if ((error = eglGetError()) != EGL_SUCCESS){
+    glcontext_egl->surface = eglCreateWindowSurface(glcontext_egl->display, config, glcontext_egl->window, NULL);
+    if ((error = eglGetError()) != EGL_SUCCESS) {
         return -1;
     }
 
@@ -134,6 +146,12 @@ static int glcontext_egl_make_current(struct glcontext *glcontext, int current)
     }
 
     return ret - 1;
+}
+
+static void glcontext_egl_swap_buffers(struct glcontext *glcontext)
+{
+    struct glcontext_egl *glcontext_egl = glcontext->priv_data;
+    eglSwapBuffers(glcontext_egl->display, glcontext_egl->surface);
 }
 
 static void *glcontext_egl_get_display(struct glcontext *glcontext)
@@ -164,6 +182,7 @@ const struct glcontext_class ngli_glcontext_egl_class = {
     .uninit = glcontext_egl_uninit,
     .create = glcontext_egl_create,
     .make_current = glcontext_egl_make_current,
+    .swap_buffers = glcontext_egl_swap_buffers,
     .get_display = glcontext_egl_get_display,
     .get_window = glcontext_egl_get_window,
     .get_handle = glcontext_egl_get_handle,
