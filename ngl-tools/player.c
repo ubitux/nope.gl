@@ -22,6 +22,10 @@
 #include <string.h>
 #include <GLFW/glfw3.h>
 
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_GLX
+#include <GLFW/glfw3native.h>
+
 #include "common.h"
 #include "player.h"
 
@@ -157,7 +161,16 @@ int player_init(struct player *p, const char *win_title, struct ngl_node *scene,
     glfwSetWindowSizeCallback(p->window, size_callback);
     glfwSetCursorPosCallback(p->window, cursor_pos_callback);
 
-    struct ngl_config config = {.wrapped = 1};
+
+    glfwMakeContextCurrent(NULL);
+    Display *display = glfwGetX11Display();
+    Window window = glfwGetX11Window(p->window);
+
+    struct ngl_config config = {
+        .display = &display,
+        .window = &window,
+        .wrapped = 1,
+    };
 
     p->ngl = ngl_create();
     if (!p->ngl)
@@ -192,7 +205,7 @@ void player_main_loop(void)
     do {
         update_time(-1);
         ngl_draw(p->ngl, p->frame_ts / 1000000.0);
-        glfwSwapBuffers(p->window);
+        // glfwSwapBuffers(p->window);
         glfwPollEvents();
     } while (glfwGetKey(p->window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
              glfwWindowShouldClose(p->window) == 0);
