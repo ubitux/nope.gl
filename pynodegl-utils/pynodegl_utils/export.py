@@ -4,7 +4,6 @@ import subprocess
 import pynodegl as ngl
 from PyQt5 import QtGui, QtCore
 
-from gl import get_gl_format
 from com import query_inplace
 
 
@@ -46,29 +45,16 @@ class Exporter(QtCore.QObject):
         reader = subprocess.Popen(cmd, preexec_fn=close_unused_child_fd, close_fds=False)
         close_unused_parent_fd()
 
-        # GL context
-        glctx = QtGui.QOpenGLContext()
-        assert glctx.create() is True
-        assert glctx.isValid() is True
-
-        # Offscreen Surface
-        surface = QtGui.QOffscreenSurface()
-        surface.create()
-        assert surface.isValid() is True
-
-        glctx.makeCurrent(surface)
-
-        # Framebuffer
-        fbo_format = QtGui.QOpenGLFramebufferObjectFormat()
-        fbo_format.setSamples(samples)
-        fbo_format.setAttachment(QtGui.QOpenGLFramebufferObject.CombinedDepthStencil)
-        fbo = QtGui.QOpenGLFramebufferObject(w, h, fbo_format)
-        assert fbo.isValid() is True
-        fbo.bind()
-
         # node.gl context
         ngl_viewer = ngl.Viewer()
-        ngl_viewer.configure(platform=ngl.GLPLATFORM_AUTO, api=ngl.GLAPI_AUTO, wrapped=1)
+        ngl_viewer.configure(
+            platform=ngl.GLPLATFORM_AUTO,
+            api=ngl.GLAPI_AUTO,
+            wrapped=0,
+            offscreen=1,
+            offscreen_width=w,
+            offscreen_height=h
+        )
         ngl_viewer.set_scene_from_string(cfg['scene'])
         ngl_viewer.set_viewport(0, 0, w, h)
         ngl_viewer.set_clearcolor(*cfg['clear_color'])
@@ -77,20 +63,11 @@ class Exporter(QtCore.QObject):
         nb_frame = int(duration * fps[0] / fps[1])
         for i in range(nb_frame):
             time = i * fps[1] / float(fps[0])
-            # FIXME: due to the nature of Python threads, another widget can
-            # make another GL context current once the GIL is released, thus we
-            # need to make sure this rendering context is the current one
-            # before each draw call.
-            glctx.makeCurrent(surface)
             ngl_viewer.draw(time)
             self.progressed.emit(i*100 / nb_frame)
-            glctx.swapBuffers(surface)
         self.progressed.emit(100)
 
         os.close(fd_w)
-        fbo.release()
-        glctx.doneCurrent()
-
         reader.wait()
 
         return cfg
@@ -121,8 +98,6 @@ def test_export():
     if len(sys.argv) != 2:
         print 'Usage: %s <outfile>' % sys.argv[0]
         sys.exit(0)
-
-    QtGui.QSurfaceFormat.setDefaultFormat(get_gl_format())
 
     filename = sys.argv[1]
     app = QtGui.QGuiApplication(sys.argv)
