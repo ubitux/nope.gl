@@ -60,8 +60,10 @@ static int glcontext_egl_init(struct glcontext *glcontext, void *display, void *
             !glcontext_egl->handle)
             return -1;
     } else {
-        if (!glcontext_egl->display ||
-            !glcontext_egl->window)
+        if (!glcontext_egl->display)
+            return -1;
+
+        if (!glcontext->offscreen && !glcontext_egl->window)
             return -1;
     }
 
@@ -126,9 +128,22 @@ static int glcontext_egl_create(struct glcontext *glcontext, void *other)
         return -1;
     }
 
-    glcontext_egl->surface = eglCreateWindowSurface(glcontext_egl->display, config, glcontext_egl->window, NULL);
-    if ((error = eglGetError()) != EGL_SUCCESS) {
-        return -1;
+    if (glcontext->offscreen) {
+        const EGLint attribs[] = {
+            EGL_WIDTH, glcontext->offscreen_width,
+            EGL_HEIGHT, glcontext->offscreen_height,
+            EGL_NONE
+        };
+
+        glcontext_egl->surface = eglCreatePbufferSurface(glcontext_egl->display, config, attribs);
+        if ((error = eglGetError()) != EGL_SUCCESS) {
+            return -1;
+        }
+    } else {
+        glcontext_egl->surface = eglCreateWindowSurface(glcontext_egl->display, config, glcontext_egl->window, NULL);
+        if ((error = eglGetError()) != EGL_SUCCESS) {
+            return -1;
+        }
     }
 
     return 0;
