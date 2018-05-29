@@ -54,6 +54,7 @@ static int glcontext_x11_init(struct glcontext *glcontext, void *display, void *
     glcontext_x11->display = display ? *(Display **)display : glXGetCurrentDisplay();
     if (!glcontext_x11->display)
         return -1;
+    /* XXX: yolo xopen ? */
 
     if (!glcontext->offscreen) {
         glcontext_x11->window  = window  ? *(Window *)window : glXGetCurrentDrawable();
