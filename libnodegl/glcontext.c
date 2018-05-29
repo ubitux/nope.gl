@@ -134,6 +134,9 @@ struct glcontext *ngli_glcontext_new(struct ngl_config *config)
     glcontext->platform = platform;
     glcontext->api = api;
     glcontext->wrapped = config->wrapped;
+    glcontext->offscreen = config->offscreen;
+    glcontext->offscreen_width = config->offscreen_width;
+    glcontext->offscreen_height = config->offscreen_height;
 
     if (glcontext->class->init) {
         void *handle = glcontext->wrapped ? config->handle : NULL;

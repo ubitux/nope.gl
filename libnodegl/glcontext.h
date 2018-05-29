@@ -49,6 +49,9 @@ struct glcontext {
     int platform;
     int api;
     int wrapped;
+    int offscreen;
+    int offscreen_width;
+    int offscreen_height;
     void *priv_data;
 
     /* GL api */

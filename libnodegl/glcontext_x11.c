@@ -52,9 +52,14 @@ static int glcontext_x11_init(struct glcontext *glcontext, void *display, void *
     };
 
     glcontext_x11->display = display ? *(Display **)display : glXGetCurrentDisplay();
-    glcontext_x11->window  = window  ? *(Window *)window    : glXGetCurrentDrawable();
-    if (!glcontext_x11->display || !glcontext_x11->window)
+    if (!glcontext_x11->display)
         return -1;
+
+    if (!glcontext->offscreen) {
+        glcontext_x11->window  = window  ? *(Window *)window : glXGetCurrentDrawable();
+        if (!glcontext_x11->window)
+            return -1;
+    }
 
     if (glcontext->wrapped) {
         glcontext_x11->handle  = handle  ? *(GLXContext *)handle : glXGetCurrentContext();
@@ -81,6 +86,9 @@ static void glcontext_x11_uninit(struct glcontext *glcontext)
 
     if (!glcontext->wrapped)
         glXDestroyContext(glcontext_x11->display, glcontext_x11->handle);
+
+    if (glcontext->offscreen)
+        glXDestroyPbuffer(glcontext_x11->display, glcontext_x11->window);
 }
 
 static int glcontext_x11_create(struct glcontext *glcontext, void *other)
@@ -136,6 +144,18 @@ static int glcontext_x11_create(struct glcontext *glcontext, void *other)
 
     if (!glcontext_x11->handle)
         return -1;
+
+    if (glcontext->offscreen) {
+        int attribs[] = {
+            GLX_PBUFFER_WIDTH, glcontext->offscreen_width,
+            GLX_PBUFFER_HEIGHT, glcontext->offscreen_height,
+            None
+        };
+
+        glcontext_x11->window = glXCreatePbuffer(display, fbconfigs[0], attribs);
+        if (!glcontext_x11->window)
+            return -1;
+    }
 
     return 0;
 }
