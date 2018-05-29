@@ -163,6 +163,8 @@ int ngl_draw(struct ngl_ctx *s, double t)
 {
     struct glcontext *glcontext = s->glcontext;
 
+    ngli_glcontext_make_current(glcontext, 1);
+
     int ret = ngli_prepare_draw(s, t);
     if (ret < 0)
         goto end;
