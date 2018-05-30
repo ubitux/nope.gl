@@ -90,6 +90,7 @@ LIB_OBJS = api.o                    \
            node_uniform.o           \
            nodes.o                  \
            params.o                 \
+           queue.o                  \
            serialize.o              \
            transforms.o             \
            utils.o                  \
@@ -111,10 +112,10 @@ LIB_EXTRA_CFLAGS_Android   = -DHAVE_PLATFORM_EGL
 LIB_EXTRA_CFLAGS_iPhone    = -DHAVE_PLATFORM_EAGL
 LIB_EXTRA_CFLAGS_MinGW-w64 = -DHAVE_PLATFORM_WGL
 
-LIB_LDLIBS                 = -lm
+LIB_LDLIBS                 = -lm -lpthread
 LIB_EXTRA_LDLIBS_Linux     =
 LIB_EXTRA_LDLIBS_Darwin    = -framework OpenGL -framework CoreVideo -framework CoreFoundation -framework AppKit
-LIB_EXTRA_LDLIBS_Android   = -legl -lpthread
+LIB_EXTRA_LDLIBS_Android   = -legl
 LIB_EXTRA_LDLIBS_iPhone    = -framework CoreMedia
 LIB_EXTRA_LDLIBS_MinGW-w64 = -lopengl32
 
@@ -221,6 +222,7 @@ gl.xml:
 #
 TESTS = asm             \
         hmap            \
+        queue           \
         utils           \
 
 TESTPROGS = $(addprefix test_,$(TESTS))
@@ -232,6 +234,8 @@ testprogs: $(TESTPROGS)
 test_asm: LDLIBS = $(PROJECT_LDLIBS) -lm
 test_asm: test_asm.o math_utils.o $(LIB_OBJS_ARCH_$(ARCH))
 test_hmap: test_hmap.o utils.o
+test_queue: LDLIBS = $(PROJECT_LDLIBS) -lpthread
+test_queue: test_queue.o queue.o utils.o
 test_utils: test_utils.o utils.o
 
 
