@@ -100,6 +100,12 @@ static int cmd_set_scene(struct ngl_ctx *s, void *arg)
         return ret;
     }
 
+#if 0
+    ret = node_track_timeranges();
+    if (ret < 0)
+        return ret;
+#endif
+
     s->scene = ngl_node_ref(scene);
     return 0;
 }
@@ -262,6 +268,7 @@ struct ngl_ctx *ngl_create(void)
     ngli_darray_init(&s->modelview_matrix_stack, 4 * 4 * sizeof(float), 1);
     ngli_darray_init(&s->projection_matrix_stack, 4 * 4 * sizeof(float), 1);
     ngli_darray_init(&s->activitycheck_nodes, sizeof(struct ngl_node *), 0);
+    //ngli_darray_init(&s->timerange_nodes, sizeof(struct ngl_node *), 0);
 
     static const NGLI_ALIGNED_MAT(id_matrix) = NGLI_MAT4_IDENTITY;
     if (!ngli_darray_push(&s->modelview_matrix_stack, id_matrix) ||
@@ -374,6 +381,14 @@ int ngl_set_scene(struct ngl_ctx *s, struct ngl_node *scene)
     return dispatch_cmd(s, cmd_set_scene, scene);
 }
 
+#if 0
+struct ngl_node *ngli_timerange_get_graph(struct ngl_ctx *s, double duration)
+{
+    // in thread?
+    return ngli_passes_get_graph(&s->passes);
+}
+#endif
+
 int ngli_prepare_draw(struct ngl_ctx *s, double t)
 {
     if (!s->configured) {
@@ -408,6 +423,7 @@ void ngl_freep(struct ngl_ctx **ss)
     ngli_darray_reset(&s->modelview_matrix_stack);
     ngli_darray_reset(&s->projection_matrix_stack);
     ngli_darray_reset(&s->activitycheck_nodes);
+    //ngli_darray_reset(&s->timerange_nodes);
     ngli_free(*ss);
     *ss = NULL;
 }

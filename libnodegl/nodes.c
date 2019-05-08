@@ -390,6 +390,62 @@ void ngli_node_detach_ctx(struct ngl_node *node)
     ngli_assert(ret == 0);
 }
 
+static int node_track_passes(struct ngl_node *node, struct darray *trf_stack, struct darray *passes)
+{
+    if (node->class->id == NGL_NODE_TIMERANGEFILTER) {
+        if (!ngli_darray_push(trf_stack, &node))
+            return -1;
+    } else if (node->class->id == NGL_NODE_RENDER ||
+               node->class->id == NGL_NODE_COMPUTE ||
+               node->class->id == NGL_NODE_TEXT) {
+
+        struct pass_info *pass = ngli_darray_push(passes, NULL);
+        if (!pass)
+            return -1;
+
+        pass->label = node->label; // XXX dup?
+        pass->type  = node->class->id;
+        int ret = ngli_timerange_init(&pass->timerange, trf_stack);
+        if (ret < 0)
+            return ret;
+    }
+
+    // HACK (prevent const node up to ngli_node_track_passes)
+    ngli_darray_init(&node->children, sizeof(struct ngl_node *), 0);
+    int ret = track_children(node);
+    if (ret < 0)
+        return ret;
+
+    const struct darray *children_array = &node->children;
+    const struct ngl_node **children = ngli_darray_data(children_array);
+    for (int i = 0; i < ngli_darray_count(children_array); i++) {
+        const struct ngl_node *child = children[i];
+        int ret = node_track_passes(child, trf_stack, passes);
+        if (ret < 0)
+            return ret;
+    }
+
+    // HACK
+    ngli_darray_reset(&node->children);
+
+    if (node->class->id == NGL_NODE_TIMERANGEFILTER)
+        ngli_darray_pop(trf_stack);
+
+    return 0;
+}
+
+int ngli_node_track_passes(struct ngl_node *node, struct darray *passes)
+{
+    struct darray trf_stack;
+    ngli_darray_init(&trf_stack, sizeof(struct ngl_node *), 0);
+
+    ngli_darray_init(passes, sizeof(struct pass_info), 0);
+
+    int ret = node_track_passes(node, &trf_stack, passes);
+    ngli_darray_reset(&trf_stack);
+    return ret;
+}
+
 int ngli_node_visit(struct ngl_node *node, int is_active, double t)
 {
     /*

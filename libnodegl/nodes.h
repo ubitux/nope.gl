@@ -56,12 +56,21 @@
 #include "format.h"
 #include "rendertarget.h"
 #include "texture.h"
+#include "timerange.h"
 
 struct node_class;
 
 typedef int (*cmd_func_type)(struct ngl_ctx *s, void *arg);
 
 typedef void (*capture_func_type)(struct ngl_ctx *s);
+
+struct pass_info {
+    char *label;
+    int type;
+    struct timerange timerange;
+};
+
+int ngli_node_track_passes(struct ngl_node *node, struct darray *passes);
 
 struct ngl_ctx {
     /* Controller-only fields */
@@ -82,6 +91,7 @@ struct ngl_ctx {
     struct darray modelview_matrix_stack;
     struct darray projection_matrix_stack;
     struct darray activitycheck_nodes;
+    struct darray passes;
 #if defined(HAVE_VAAPI_X11)
     Display *x11_display;
     VADisplay va_display;
@@ -300,6 +310,8 @@ struct timerangemode_priv {
     double render_time;
     int updated;
 };
+
+int ngli_node_timerangefilter_nodes_to_segments(const struct ngl_node *node, struct darray *dst);
 
 struct transform_priv {
     struct ngl_node *child;

@@ -118,6 +118,7 @@ class MainWindow(QtWidgets.QSplitter):
         self._scene_toolbar.backendChanged.connect(self._config.set_backend)
 
         self._scene_toolbar.hudChanged.connect(self._config.set_hud)
+        self._scene_toolbar.timegraphChanged.connect(self._config.set_timegraph)
 
         self._errbuf = QtWidgets.QPlainTextEdit()
         self._errbuf.setFont(QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.FixedFont))

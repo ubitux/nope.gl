@@ -165,7 +165,14 @@ def query_inplace(**idict):
             scene = g
 
         # Prepare output data
-        odict['scene'] = scene.dot() if idict.get('fmt') == 'dot' else scene.serialize()
+        if idict.get('fmt') == 'dot':
+            odict['scene'] = scene.dot()
+        else:
+            if idict.get('enable_timegraph'):
+                scene_str = scene.timegraph(odict['duration'], odict['aspect_ratio'])
+            else:
+                scene_str = scene.serialize()
+            odict['scene'] = scene_str
 
     elif idict['query'] == 'list':
 

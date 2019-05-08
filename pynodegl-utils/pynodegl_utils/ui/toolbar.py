@@ -40,6 +40,7 @@ class Toolbar(QtWidgets.QWidget):
     clear_color_changed = QtCore.pyqtSignal(tuple, name='clearColorChanged')
     backend_changed = QtCore.pyqtSignal(str, name='backendChanged')
     hud_changed = QtCore.pyqtSignal(bool, name='hudChanged')
+    timegraph_changed = QtCore.pyqtSignal(bool, name='timegraphChanged')
 
     def __init__(self, config):
         super(Toolbar, self).__init__()
@@ -58,6 +59,9 @@ class Toolbar(QtWidgets.QWidget):
 
         self._hud_chkbox = QtWidgets.QCheckBox('Enable HUD')
         self._hud_chkbox.setChecked(config.get('enable_hud'))
+
+        self._timegraph_chkbox = QtWidgets.QCheckBox('Enable TimeGraph')
+        self._timegraph_chkbox.setChecked(config.get('enable_timegraph'))
 
         all_ar = config.CHOICES['aspect_ratio']
         default_ar = config.get('aspect_ratio')
@@ -147,6 +151,7 @@ class Toolbar(QtWidgets.QWidget):
 
         self._scene_toolbar_layout = QtWidgets.QVBoxLayout(self)
         self._scene_toolbar_layout.addWidget(self._hud_chkbox)
+        self._scene_toolbar_layout.addWidget(self._timegraph_chkbox)
         self._scene_toolbar_layout.addLayout(ar_hbox)
         self._scene_toolbar_layout.addLayout(far_hbox)
         self._scene_toolbar_layout.addLayout(samples_hbox)
@@ -160,6 +165,7 @@ class Toolbar(QtWidgets.QWidget):
         self._scn_view.clicked.connect(self._scn_view_selected)
         self._scn_view.activated.connect(self._scn_view_selected)
         self._hud_chkbox.stateChanged.connect(self._hud_chkbox_changed)
+        self._timegraph_chkbox.stateChanged.connect(self._timegraph_chkbox_changed)
         self._ar_cbbox.currentIndexChanged.connect(self._set_aspect_ratio)
         self._samples_cbbox.currentIndexChanged.connect(self._set_samples)
         self._fr_cbbox.currentIndexChanged.connect(self._set_frame_rate)
@@ -295,6 +301,7 @@ class Toolbar(QtWidgets.QWidget):
                 'samples': choices['samples'][self._samples_cbbox.currentIndex()],
                 'extra_args': self._scene_extra_args,
                 'enable_hud': self._hud_chkbox.isChecked(),
+                'enable_timegraph': self._timegraph_chkbox.isChecked(),
                 'clear_color': self._clear_color,
                 'backend': choices['backend'][self._backend_cbbox.currentIndex()],
         }
@@ -379,6 +386,11 @@ class Toolbar(QtWidgets.QWidget):
     @QtCore.pyqtSlot()
     def _hud_chkbox_changed(self):
         self.hudChanged.emit(self._hud_chkbox.isChecked())
+        self._load_current_scene()
+
+    @QtCore.pyqtSlot()
+    def _timegraph_chkbox_changed(self):
+        self.timegraphChanged.emit(self._timegraph_chkbox.isChecked())
         self._load_current_scene()
 
     @QtCore.pyqtSlot(int)

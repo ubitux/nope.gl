@@ -27,6 +27,7 @@
 #include "nodegl.h"
 #include "nodes.h"
 #include "params.h"
+#include "timerange.h"
 
 struct timerangefilter_priv {
     struct ngl_node *child;
@@ -58,6 +59,40 @@ static const struct node_param timerangefilter_params[] = {
                       .desc=NGLI_DOCSTRING("`child` will not be released if it is required in the next incoming `max_idle_time` seconds")},
     {NULL}
 };
+
+// TODO: move as init in the mode nodes
+static const int get_native_type(int node_class)
+{
+    switch (node_class) {
+        case NGL_NODE_TIMERANGEMODEONCE: return NGLI_TIMERANGE_ONCE;
+        case NGL_NODE_TIMERANGEMODENOOP: return NGLI_TIMERANGE_NOOP;
+        case NGL_NODE_TIMERANGEMODECONT: return NGLI_TIMERANGE_CONT;
+    }
+    return -1;
+}
+
+/* switch from the user nodes form to the internal segments darray form */
+int ngli_node_timerangefilter_nodes_to_segments(const struct ngl_node *node, struct darray *dst)
+{
+    const struct timerangefilter_priv *s = node->priv_data;
+
+    ngli_darray_init(dst, sizeof(struct timerangemode), 0);
+
+    for (int i = 0; i < s->nb_ranges; i++) {
+        const struct ngl_node *trm_node = s->ranges[i];
+        const struct timerangemode_priv *trm = trm_node->priv_data;
+        struct timerangemode m = {
+            .type = get_native_type(trm_node->class->id),
+            .start_time = trm->start_time,
+            .render_time = trm->render_time,
+            .prefetch_time = s->prefetch_time,
+            .max_idle_time = s->max_idle_time,
+        };
+        if (!ngli_darray_push(dst, &m))
+            return -1;
+    }
+    return 0;
+}
 
 static int timerangefilter_init(struct ngl_node *node)
 {

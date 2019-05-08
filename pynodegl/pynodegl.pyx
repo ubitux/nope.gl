@@ -23,6 +23,7 @@ cdef extern from "nodegl.h":
     int ngl_node_param_set(ngl_node *node, const char *key, ...)
     char *ngl_node_dot(const ngl_node *node)
     char *ngl_node_serialize(const ngl_node *node)
+    ngl_node *ngl_node_timegraph(const ngl_node *node, double duration, const int *aspect_ratio)
     ngl_node *ngl_node_deserialize(const char *s)
 
     int ngl_anim_evaluate(ngl_node *anim, void *dst, double t)
@@ -61,6 +62,7 @@ cdef extern from "nodegl.h":
     int ngl_set_scene(ngl_ctx *s, ngl_node *scene)
     int ngl_draw(ngl_ctx *s, double t) nogil
     char *ngl_dot(ngl_ctx *s, double t) nogil
+    #ngl_node *ngl_get_timegraph(ngl_ctx *s) nogil
     void ngl_freep(ngl_ctx **ss)
 
     int ngl_easing_evaluate(const char *name, double *args, int nb_args,
@@ -184,6 +186,15 @@ cdef class Viewer:
     def draw(self, double t):
         with nogil:
             ngl_draw(self.ctx, t)
+
+    #def get_timegraph(self):
+    #    cdef char *s;
+    #    with nogil:
+    #        timegraph = ngl_get_timegraph(self.ctx)
+    #        if not timegraph:
+    #            return None
+    #        s = ngl_node_serialize(timegraph)
+    #    return _ret_pystr(s) if s else None
 
     def dot(self, double t):
         cdef char *s;

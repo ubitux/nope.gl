@@ -194,6 +194,16 @@ cdef class _Node:
     def dot(self):
         return _ret_pystr(ngl_node_dot(self.ctx))
 
+    def timegraph(self, duration, aspect_ratio):
+        cdef int ar[2]
+        ar[0] = aspect_ratio[0]
+        ar[1] = aspect_ratio[1]
+        cdef ngl_node *timegraph
+        timegraph = ngl_node_timegraph(self.ctx, duration, ar)
+        ret = _ret_pystr(ngl_node_serialize(timegraph))
+        ngl_node_unrefp(&timegraph)
+        return ret
+
     def __dealloc__(self):
         ngl_node_unrefp(&self.ctx)
 

@@ -70,6 +70,7 @@ class Config(QtCore.QObject):
             'log_level': 'info',
             'clear_color': (0.0, 0.0, 0.0, 1.0),
             'enable_hud': False,
+            'enable_timegraph': False,
             'backend': 'gl',
 
             # Export
@@ -161,6 +162,10 @@ class Config(QtCore.QObject):
     @QtCore.pyqtSlot(bool)
     def set_hud(self, hud):
         self._set_cfg('enable_hud', hud)
+
+    @QtCore.pyqtSlot(bool)
+    def set_timegraph(self, timegraph):
+        self._set_cfg('enable_timegraph', timegraph)
 
     @QtCore.pyqtSlot(str)
     def set_backend(self, backend):

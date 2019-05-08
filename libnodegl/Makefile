@@ -119,6 +119,8 @@ LIB_OBJS = animation.o              \
            rendertarget.o           \
            serialize.o              \
            texture.o                \
+           timerange.o              \
+           timegraph.o              \
            topology.o               \
            transforms.o             \
            type.o                   \
@@ -267,6 +269,7 @@ TESTS = asm             \
         darray          \
         draw            \
         hmap            \
+        timerange       \
         utils           \
 
 TESTPROGS = $(addprefix test_,$(TESTS))
@@ -280,6 +283,7 @@ test_asm: test_asm.o math_utils.o $(LIB_OBJS_ARCH_$(ARCH))
 test_darray: test_darray.o darray.o memory.o
 test_draw: test_draw.o drawutils.o
 test_hmap: test_hmap.o utils.o memory.o
+test_timerange: test_timerange.o $(LIB_OBJS)
 test_utils: test_utils.o utils.o memory.o
 
 

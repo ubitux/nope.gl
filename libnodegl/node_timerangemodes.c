@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include "nodegl.h"
 #include "nodes.h"
+#include "timerange.h"
 #include "utils.h"
 
 #define OFFSET(x) offsetof(struct timerangemode_priv, x)

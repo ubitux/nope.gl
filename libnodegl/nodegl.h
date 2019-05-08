@@ -400,6 +400,11 @@ int ngl_set_scene(struct ngl_ctx *s, struct ngl_node *scene);
 int ngl_draw(struct ngl_ctx *s, double t);
 
 /**
+ * XXX
+ */
+struct ngl_node *ngl_node_timegraph(const struct ngl_node *scene, double duration, const int *aspect_ratio);
+
+/**
  * Serialize the current scene in Graphviz format (.dot) a node graph at the
  * specified time. Non active nodes will be grayed.
  *
