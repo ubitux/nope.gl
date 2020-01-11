@@ -21,7 +21,9 @@
 # under the License.
 #
 
+import os.path as op
 from PySide2 import QtCore, QtWidgets
+from PySide2.QtUiTools import QUiLoader
 from fractions import Fraction
 
 from pynodegl_utils.export import Exporter
@@ -32,54 +34,30 @@ class ExportView(QtWidgets.QWidget):
     def __init__(self, get_scene_func, config):
         super(ExportView, self).__init__()
 
+        self._ui = QUiLoader().load(__file__[:-2] + 'ui', self)
+
         self._get_scene_func = get_scene_func
         self._framerate = config.get('framerate')
         self._aspect_ratio = config.get('aspect_ratio')
 
-        self._ofile_text = QtWidgets.QLineEdit(config.get('export_filename'))
-        ofile_btn = QtWidgets.QPushButton('Browse')
+        self._ui.ofile_text.setText(config.get('export_filename'))
 
-        file_box = QtWidgets.QHBoxLayout()
-        file_box.addWidget(self._ofile_text)
-        file_box.addWidget(ofile_btn)
+        self._ui.spinbox_width.setValue(config.get('export_width'))
+        self._ui.spinbox_height.setValue(config.get('export_height'))
+        self._ui.encopts_text.setText(config.get('export_extra_enc_args'))
+        self._ui.export_btn = QtWidgets.QPushButton('Export')
 
-        self._spinbox_width = QtWidgets.QSpinBox()
-        self._spinbox_width.setRange(1, 0xffff)
-        self._spinbox_width.setValue(config.get('export_width'))
+        self._ui.warning_label.hide()
 
-        self._spinbox_height = QtWidgets.QSpinBox()
-        self._spinbox_height.setRange(1, 0xffff)
-        self._spinbox_height.setValue(config.get('export_height'))
-
-        self._encopts_text = QtWidgets.QLineEdit()
-        self._encopts_text.setText(config.get('export_extra_enc_args'))
-
-        self._export_btn = QtWidgets.QPushButton('Export')
-        btn_hbox = QtWidgets.QHBoxLayout()
-        btn_hbox.addStretch()
-        btn_hbox.addWidget(self._export_btn)
-
-        self._warning_label = QtWidgets.QLabel()
-        self._warning_label.setStyleSheet('color: red')
-        self._warning_label.hide()
-
-        form = QtWidgets.QFormLayout(self)
-        form.addRow('Filename:', file_box)
-        form.addRow('Width:',    self._spinbox_width)
-        form.addRow('Height:',   self._spinbox_height)
-        form.addRow('Extra encoder arguments:', self._encopts_text)
-        form.addRow(self._warning_label)
-        form.addRow(btn_hbox)
-
-        ofile_btn.clicked.connect(self._select_ofile)
-        self._export_btn.clicked.connect(self._export)
-        self._ofile_text.textChanged.connect(self._check_settings)
-        self._ofile_text.textChanged.connect(config.set_export_filename)
-        self._spinbox_width.valueChanged.connect(self._check_settings)
-        self._spinbox_width.valueChanged.connect(config.set_export_width)
-        self._spinbox_height.valueChanged.connect(self._check_settings)
-        self._spinbox_height.valueChanged.connect(config.set_export_height)
-        self._encopts_text.textChanged.connect(config.set_export_extra_enc_args)
+        self._ui.ofile_btn.clicked.connect(self._select_ofile)
+        self._ui.export_btn.clicked.connect(self._export)
+        self._ui.ofile_text.textChanged.connect(self._check_settings)
+        self._ui.ofile_text.textChanged.connect(config.set_export_filename)
+        self._ui.spinbox_width.valueChanged.connect(self._check_settings)
+        self._ui.spinbox_width.valueChanged.connect(config.set_export_width)
+        self._ui.spinbox_height.valueChanged.connect(self._check_settings)
+        self._ui.spinbox_height.valueChanged.connect(config.set_export_height)
+        self._ui.encopts_text.textChanged.connect(config.set_export_extra_enc_args)
 
         self._exporter = None
 
@@ -106,10 +84,10 @@ class ExportView(QtWidgets.QWidget):
                 warnings.append('It is recommended to use one of these frame rate when exporting to GIF: {}'.format(gif_framerates))
 
         if warnings:
-            self._warning_label.setText('\n'.join('⚠ ' + w for w in warnings))
-            self._warning_label.show()
+            self._ui.warning_label.setText('\n'.join('⚠ ' + w for w in warnings))
+            self._ui.warning_label.show()
         else:
-            self._warning_label.hide()
+            self._ui.warning_label.hide()
 
     @QtCore.Slot(int)
     def _progress(self, value):

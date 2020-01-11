@@ -22,6 +22,7 @@
 #
 
 from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2.QtUiTools import QUiLoader
 
 
 class SerialView(QtWidgets.QWidget):
@@ -29,27 +30,16 @@ class SerialView(QtWidgets.QWidget):
     def __init__(self, get_scene_func):
         super(SerialView, self).__init__()
 
+        self._ui = QUiLoader().load(__file__[:-2] + 'ui', self)
+
         self._get_scene_func = get_scene_func
 
-        self._save_btn = QtWidgets.QPushButton('Save to file')
-        self._graph_lbl = QtWidgets.QLabel()
-        self._text = QtWidgets.QPlainTextEdit()
-        self._text.setFont(QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.FixedFont))
-        self._text.setReadOnly(True)
-
-        hbox = QtWidgets.QHBoxLayout()
-        hbox.addStretch()
-        hbox.addWidget(self._save_btn)
-
-        serial_layout = QtWidgets.QVBoxLayout(self)
-        serial_layout.addWidget(self._text)
-        serial_layout.addLayout(hbox)
-
-        self._save_btn.clicked.connect(self._save_to_file)
+        self._ui.text.setFont(QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.FixedFont))
+        self._ui.save_btn.clicked.connect(self._save_to_file)
 
     @QtCore.Slot()
     def _save_to_file(self):
-        data = self._text.toPlainText()
+        data = self._ui.text.toPlainText()
         filenames = QtWidgets.QFileDialog.getSaveFileName(self, 'Select export file')
         if not filenames[0]:
             return
@@ -59,4 +49,4 @@ class SerialView(QtWidgets.QWidget):
         cfg = self._get_scene_func()
         if not cfg:
             return
-        self._text.setPlainText(cfg['scene'])
+        self._ui.text.setPlainText(cfg['scene'])
