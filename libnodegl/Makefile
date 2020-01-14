@@ -99,6 +99,7 @@ LIB_OBJS = animation.o              \
            node_hud.o               \
            node_identity.o          \
            node_media.o             \
+           node_mmap.o              \
            node_program.o           \
            node_quad.o              \
            node_render.o            \

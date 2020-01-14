@@ -277,6 +277,10 @@
         - [max_pixels, int]
         - [stream_idx, int]
 
+- MMap:
+    constructors:
+        - [child, Node]
+
 - Program:
     optional:
         - [vertex, string]

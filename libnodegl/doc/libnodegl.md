@@ -377,6 +377,16 @@ Parameter | Ctor. | Live-chg. | Type | Description | Default
 **Source**: [node_media.c](/libnodegl/node_media.c)
 
 
+## MMap
+
+Parameter | Ctor. | Live-chg. | Type | Description | Default
+--------- | :---: | :-------: | ---- | ----------- | :-----:
+`child` | ✓ |  | [`Node`](#parameter-types) | yep | 
+
+
+**Source**: [node_mmap.c](/libnodegl/node_mmap.c)
+
+
 ## Program
 
 Parameter | Ctor. | Live-chg. | Type | Description | Default

@@ -153,7 +153,7 @@ def fibo(cfg, n=8):
         new_g.add_children(render)
         orig = (orig[0] + w, orig[1] + w, 0)
 
-    return root
+    return ngl.MMap(root)
 
 
 @scene(dim=scene.Range(range=[1, 50]))

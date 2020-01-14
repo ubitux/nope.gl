@@ -80,6 +80,7 @@
     action(NGL_NODE_HUD,                    ngli_hud_class)                     \
     action(NGL_NODE_IDENTITY,               ngli_identity_class)                \
     action(NGL_NODE_MEDIA,                  ngli_media_class)                   \
+    action(NGL_NODE_MMAP,                   ngli_mmap_class)                    \
     action(NGL_NODE_PROGRAM,                ngli_program_class)                 \
     action(NGL_NODE_QUAD,                   ngli_quad_class)                    \
     action(NGL_NODE_RENDER,                 ngli_render_class)                  \
