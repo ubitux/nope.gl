@@ -21,6 +21,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <math.h>
 
 #include "memory.h"
 #include "nodes.h"
@@ -35,6 +36,11 @@
 
 struct mmap_priv {
     struct ngl_node *child;
+
+    struct darray nodes;
+    uintptr_t start_ptr;
+    uintptr_t end_ptr;
+    ptrdiff_t size;
 
     struct texture texture;
     struct canvas canvas;
@@ -54,23 +60,114 @@ static const struct node_param mmap_params[] = {
     {NULL}
 };
 
-static void set_canvas_dimensions(struct canvas *canvas)
+static size_t get_node_size(const struct ngl_node *node)
 {
-    canvas->w = 300;
-    canvas->h = 200;
+    const size_t node_size = NGLI_ALIGN(sizeof(*node), NGLI_ALIGN_VAL);
+    return node_size + node->class->priv_size;
+}
+
+static int track_children_per_types(struct mmap_priv *s, const struct ngl_node *node)
+{
+    s->start_ptr = NGLI_MIN((uintptr_t)node, s->start_ptr);
+    s->end_ptr = NGLI_MAX((uintptr_t)node + get_node_size(node), s->end_ptr);
+
+    if (!ngli_darray_push(&s->nodes, &node))
+        return NGL_ERROR_MEMORY;
+
+    const struct darray *children_array = &node->children;
+    const struct ngl_node * const *children = ngli_darray_data(children_array);
+    for (int i = 0; i < ngli_darray_count(children_array); i++) {
+        int ret = track_children_per_types(s, children[i]);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+#define RGB(r,g,b) ((unsigned)((r+m)*255) << 24U | (unsigned)((g+m)*255) << 16 | (unsigned)((b+m)*255) << 8 | 0xff)
+
+static unsigned get_rgb(const char *name)
+{
+    const uint32_t hash = ngli_crc32(name);
+    const double H = (double)hash / (double)0xffffffff * 360.0;
+    const double S = 0.9;
+    const double L = 0.6;
+
+    const int hid = H / 60.0;
+
+    const double C = (1.0 - fabs(2.0 * L - 1.0)) * S;
+    const double X = C * (1.0 - fabs(hid % 2 - 1.0));
+    const double m = L - C / 2.0;
+
+    const uint32_t sets[] = {
+        RGB(C, X, 0),
+        RGB(X, C, 0),
+        RGB(0, C, X),
+        RGB(0, X, C),
+        RGB(X, 0, C),
+        RGB(C, 0, X),
+    };
+
+    return sets[hid];
+}
+
+static int make_nodes_set(struct mmap_priv *s, struct ngl_node *scene)
+{
+    ngli_darray_init(&s->nodes, sizeof(struct ngl_node *), 0);
+
+    s->start_ptr = (uintptr_t)scene;
+    s->end_ptr = (uintptr_t)scene + get_node_size(scene);
+
+    int ret = track_children_per_types(s, scene);
+    if (ret < 0)
+        return ret;
+
+    s->size = s->end_ptr - s->start_ptr;
+    LOG(INFO, "start_ptr:%016lx end_ptr:%016lx -> size:%ld", s->start_ptr, s->end_ptr, s->size);
+
+    struct canvas *canvas = &s->canvas;
+    canvas->w = lrint(ceil(sqrt(s->size)));
+    canvas->h = lrint(ceil(s->size / (float)canvas->w));
+
+    LOG(INFO, "canvas %dx%d", canvas->w, canvas->h);
+
+    if (canvas->w * canvas->h < s->size)
+        return NGL_ERROR_BUG;
+
+    return 0;
 }
 
 static int prepare_canvas(struct mmap_priv *s)
 {
-    set_canvas_dimensions(&s->canvas);
+    int ret = make_nodes_set(s, s->child);
+    if (ret < 0)
+        return ret;
 
-    /* Allocate, draw background, print mmap */
+    /* Allocate, draw background */
     s->canvas.buf = ngli_calloc(s->canvas.w * s->canvas.h, sizeof(*s->canvas.buf) * 4);
     if (!s->canvas.buf)
         return NGL_ERROR_MEMORY;
     const uint32_t bg = 0x333333ff;
     struct rect rect = {.w = s->canvas.w, .h = s->canvas.h};
     ngli_drawutils_draw_rect(&s->canvas, &rect, bg);
+
+
+    const struct darray *nodes_array = &s->nodes;
+    const struct ngl_node * const *nodes = ngli_darray_data(nodes_array);
+    for (int i = 0; i < ngli_darray_count(nodes_array); i++) {
+        const struct ngl_node *node = nodes[i];
+        const ptrdiff_t pos = (uintptr_t)node - s->start_ptr;
+        const uint32_t color = get_rgb(node->class->name);
+        uint8_t *buf = s->canvas.buf + pos * 4;
+        for (int j = 0; j < node->class->priv_size; j++) {
+            buf[j * 4 + 0] = color >> 24;
+            buf[j * 4 + 1] = color >> 16 & 0xff;
+            buf[j * 4 + 2] = color >>  8 & 0xff;
+            buf[j * 4 + 3] = color       & 0xff;
+        }
+    }
+
     return 0;
 }
 
