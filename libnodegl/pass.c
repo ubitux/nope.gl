@@ -147,6 +147,11 @@ static int register_texture(struct pass *s, const char *name, struct ngl_node *t
         }
     }
 
+    if (crafter_texture.type == NGLI_PGCRAFT_SHADER_TEX_TYPE_TEXTURE2D &&
+        texture_priv->direct_rendering &&
+        texture_priv->data_src && texture_prix->data_src->class->id == NGL_NODE_MEDIA)
+        crafter_texture.type = NGLI_PGCRAFT_SHADER_TEX_TYPE_TEXVIDEO;
+
     if (!ngli_darray_push(&s->crafter_textures, &crafter_texture))
         return NGL_ERROR_MEMORY;
 
