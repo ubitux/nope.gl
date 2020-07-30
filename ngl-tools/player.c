@@ -32,6 +32,7 @@
 
 #include "common.h"
 #include "player.h"
+#include "ipc.h"
 #include "wsi.h"
 
 static struct player *g_player;
@@ -419,6 +420,160 @@ void player_uninit(void)
     SDL_Quit();
 }
 
+static int handle_scene(const uint8_t *data, int size)
+{
+    if (size < 1 || data[size - 1] != 0) // check if string is nul-terminated
+        return NGL_ERROR_INVALID_DATA;
+    struct player *p = g_player;
+    struct ngl_node *scene = ngl_node_deserialize((const char *)data);
+    scene = add_progress_bar(scene);
+    int ret = ngl_set_scene(p->ngl, scene);
+    ngl_node_unrefp(&scene);
+    if (ret < 0)
+        return ret;
+    ngl_node_unrefp(&scene);
+    return 0;
+}
+
+static int handle_file(const uint8_t *data, int size)
+{
+    if (size < 8)
+        return NGL_ERROR_INVALID_DATA;
+    const int name_size = IPC_TAG_BUF(data);
+    const int data_size = IPC_TAG_BUF(data + 4);
+    if (size != 8 + name_size + data_size || !name_size || data[8 + name_size - 1] != 0)
+        return NGL_ERROR_INVALID_DATA;
+    const char *filename = (const char *)data + 8;
+    int ret = makedirs(filename, 0750);
+    if (ret < 0)
+        return ret;
+    int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0640);
+    if (fd == -1) {
+        perror(filename);
+        return NGL_ERROR_IO;
+    }
+    // XXX: loop?
+    const ssize_t n = write(fd, data + 8 + name_size, data_size);
+    close(fd);
+    if (n != data_size) {
+        // XXX: split in 2 kind of errors
+        fprintf(stderr, "unable to write %s: %zd/%d written\n", filename, n, data_size);
+        return NGL_ERROR_IO;
+    }
+    return 0;
+}
+
+static int handle_duration(const uint8_t *data, int size)
+{
+    if (size != 8)
+        return NGL_ERROR_INVALID_DATA;
+    struct player *p = g_player;
+    p->duration_f = *(const double *)data;
+    p->duration = p->duration_f * 1000000;
+    ngl_node_param_set(p->pgbar_duration_node, "value", p->duration_f);
+    update_text();
+    return 0;
+}
+
+static int handle_clearcolor(const uint8_t *data, int size)
+{
+    if (size != 16)
+        return NGL_ERROR_INVALID_DATA;
+    struct player *p = g_player;
+    memcpy(p->ngl_config.clear_color, data, sizeof(p->ngl_config.clear_color));
+    return 0;
+}
+
+static int handle_samples(const uint8_t *data, int size)
+{
+    if (size != 1)
+        return NGL_ERROR_INVALID_DATA;
+    struct player *p = g_player;
+    p->ngl_config.samples = data[0];
+    return 0;
+}
+
+static int handle_aspect_ratio(const uint8_t *data, int size)
+{
+    if (size != 8)
+        return NGL_ERROR_INVALID_DATA;
+    struct player *p = g_player;
+    p->aspect[0] = IPC_TAG_BUF(data);
+    p->aspect[1] = IPC_TAG_BUF(data + 4);
+    if (!p->aspect[0] || !p->aspect[1])
+        p->aspect[0] = p->aspect[1] = 1;
+    int width, height;
+    SDL_GetWindowSize(p->window, &width, &height);
+    size_callback(p->window, width, height);
+    ngl_node_param_set(p->pgbar_text_node, "aspect_ratio", p->aspect[0], p->aspect[1]);
+    return 0;
+}
+
+static int handle_framerate(const uint8_t *data, int size)
+{
+    if (size != 8)
+        return NGL_ERROR_INVALID_DATA;
+    const int rate[] = {IPC_TAG_BUF(data), IPC_TAG_BUF(data + 4)};
+    fprintf(stderr, "WARNING: unhandled framerate %d/%d\n", rate[0], rate[1]);
+    return 0;
+}
+
+static int handle_reconfigure(const uint8_t *data, int size)
+{
+    if (size != 0)
+        return NGL_ERROR_INVALID_DATA;
+    return 0;
+}
+
+#define TAGFMT(tag) (tag)>>24, (tag)>>16&0xff, (tag)>>8&0xff, (tag)&0xff
+
+static int handle_user_event(const uint8_t *data, int data_size)
+{
+    int need_reconfigure = 0;
+    struct player *p = g_player;
+
+    while (data_size) {
+        if (data_size < 8)
+            return NGL_ERROR_INVALID_DATA;
+
+        const enum ipc_tag tag = IPC_TAG_BUF(data);
+        const int size         = IPC_TAG_BUF(data + 4);
+
+        data += 8;
+        data_size -= 8;
+        need_reconfigure |= tag == IPC_CLEARCOLOR || tag == IPC_SAMPLES || tag == IPC_RECONFIGURE;
+
+        int ret;
+        switch (tag) {
+        case IPC_SCENE:        ret = handle_scene(data, size);        break;
+        case IPC_FILE:         ret = handle_file(data, size);         break;
+        case IPC_DURATION:     ret = handle_duration(data, size);     break;
+        case IPC_ASPECT_RATIO: ret = handle_aspect_ratio(data, size); break;
+        case IPC_FRAMERATE:    ret = handle_framerate(data, size);    break;
+        case IPC_CLEARCOLOR:   ret = handle_clearcolor(data, size);   break;
+        case IPC_SAMPLES:      ret = handle_samples(data, size);      break;
+        case IPC_RECONFIGURE:  ret = handle_reconfigure(data, size);  break;
+        default:
+            fprintf(stderr, "unrecognized tag %c%c%c%c\n", TAGFMT(tag));
+            return NGL_ERROR_INVALID_DATA;
+        }
+        if (ret < 0) {
+            fprintf(stderr, "failed to handle parameter %c%c%c%c of size %d\n", TAGFMT(tag), size);
+            return ret;
+        }
+        data += size;
+        data_size -= size;
+    }
+
+    if (need_reconfigure) {
+        int ret = ngl_configure(p->ngl, &p->ngl_config);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 void player_main_loop(void)
 {
     struct player *p = g_player;
@@ -447,6 +602,11 @@ void player_main_loop(void)
                 break;
             case SDL_MOUSEMOTION:
                 mouse_pos_callback(p->window, &event.motion);
+                break;
+            case SDL_USEREVENT:
+                run = handle_user_event(event.user.data1,
+                                        (int)(intptr_t)event.user.data2) == 0;
+                free(event.user.data1);
                 break;
             }
         }

@@ -34,5 +34,7 @@ double clipd(double v, double min, double max);
 int clipi(int v, int min, int max);
 void get_viewport(int width, int height, const int *aspect_ratio, int *vp);
 char *get_text_file_content(const char *filename);
+int get_file_data(const char *filename, uint8_t **dstp, int *sizep);
+int makedirs(const char *path, int mode);
 
 #endif

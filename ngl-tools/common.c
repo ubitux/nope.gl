@@ -21,10 +21,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include <nodegl.h>
 
 #include "common.h"
 
@@ -101,4 +105,79 @@ end:
     if (fd != -1 && fd != STDIN_FILENO)
         close(fd);
     return buf;
+}
+
+int get_file_data(const char *filename, uint8_t **dstp, int *sizep)
+{
+    int ret = 0;
+    uint8_t *buf = NULL;
+
+    int fd = filename ? open(filename, O_RDONLY) : STDIN_FILENO;
+    if (fd == -1) {
+        fprintf(stderr, "unable to open %s\n", filename);
+        return NGL_ERROR_IO;
+    }
+
+    ssize_t pos = 0;
+    for (;;) {
+        const ssize_t needed = pos + BUF_SIZE;
+        void *new_buf = realloc(buf, needed);
+        if (!new_buf) {
+            free(buf);
+            buf = NULL;
+            ret = NGL_ERROR_MEMORY;
+            goto end;
+        }
+        buf = new_buf;
+        const ssize_t n = read(fd, buf + pos, BUF_SIZE);
+        if (n < 0) {
+            free(buf);
+            buf = NULL;
+            ret = NGL_ERROR_IO;
+            goto end;
+        }
+        if (n == 0)
+            break;
+        pos += n;
+    }
+
+end:
+    if (fd != -1 && fd != STDIN_FILENO)
+        close(fd);
+
+    *dstp = buf;
+    *sizep = pos;
+    return ret;
+}
+
+int makedirs(const char *path, int mode)
+{
+    char cur_path[1024];
+
+    int n = snprintf(cur_path, sizeof(cur_path), "%s", path);
+    if (n != strlen(path)) {
+        fprintf(stderr, "%s: path too long (%d > %zd)\n", path, n, strlen(path));
+        return NGL_ERROR_MEMORY;
+    }
+
+    const char *p = cur_path;
+    while (*p) {
+        char *next = strchr(p, '/');
+        if (!next) // we do not create the last element if not ending with a '/'
+            break;
+        if (p == next) { // ignore potential first '/'
+            p = next + 1;
+            continue;
+        }
+        *next = 0;
+        const int r = mkdir(cur_path, mode);
+        *next = '/';
+        if (r < 0 && errno != EEXIST) {
+            perror(cur_path);
+            return NGL_ERROR_GENERIC;
+        }
+        p = next + 1;
+    }
+
+    return 0;
 }
