@@ -33,5 +33,6 @@ int64_t gettime(void);
 double clipd(double v, double min, double max);
 int clipi(int v, int min, int max);
 void get_viewport(int width, int height, const int *aspect_ratio, int *vp);
+char *get_text_file_content(const char *filename);
 
 #endif
