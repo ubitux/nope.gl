@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+
+session=$1
+ifile=$2
+ofile=$3
+
+host=${session%%:*}
+port=${session##*:}
+
+# Upload file only if it's not local
+if [ "$host" = "127.0.0.1" ]; then
+    echo "$ifile"
+    exit 0
+fi
+
+dst_file="/tmp/ngl-desktop/files/$port/$ofile"
+set -x
+ngl-ipc -x "$host" -p "$port" -u "$dst_file=$ifile"
+set +x
+echo "$dst_file"

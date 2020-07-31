@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+for session in /tmp/ngl-desktop/session.*; do
+    [ ! -e "$session" ] && continue  # for when no file is available
+    port=${session##*.}
+    echo 127.0.0.1:$port local ngl-desktop port:$port
+done
+
+for session in $NGL_DESKTOP_REMOTE_SESSIONS; do
+    host=${session%%:*}
+    port=${session##*:}
+    if ngl-ipc -x $host -p $port >/dev/null; then
+        echo $session remote ngl-desktop host:$host port:$port
+    fi
+done
