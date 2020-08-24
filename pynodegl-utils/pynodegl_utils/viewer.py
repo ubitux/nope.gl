@@ -23,9 +23,26 @@
 import sys
 import os.path as op
 
-from PySide2 import QtWidgets, QtCore
+from dearpygui.dearpygui import start_dearpygui
+from dearpygui.dearpygui import (
+    show_documentation,
+    show_debug,
+    show_about,
+    show_metrics,
+    show_source,
+    show_logger,
 
-from .ui.main_window import MainWindow
+
+    add_text,
+    add_button,
+    add_input_text,
+    add_slider_float,
+)
+
+#from .ui.main_window import main_window, MainWindow
+
+def save_callback(sender, data):
+    print("Save Clicked")
 
 
 def run():
@@ -39,7 +56,27 @@ def run():
                         help='set the directory path containing event hooks')
     pargs = parser.parse_args(sys.argv[1:])
 
-    app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow(pargs.module, pargs.hooksdir)
-    window.show()
-    app.exec_()
+    #show_documentation()
+    #show_debug()
+    #show_about()
+    #show_metrics()
+    #show_source(__file__)
+    #show_logger()
+
+    #window = MainWindow(pargs.module, pargs.hooksdir)
+    #main_window()
+
+    #start_dearpygui()
+    #app = QtWidgets.QApplication(sys.argv)
+    #window.show()
+    #app.exec_()
+
+    add_text("Hello world")
+    add_button("Save", callback="save_callback")
+    add_input_text("string")
+    add_slider_float("float")
+
+    start_dearpygui()
+
+if __name__ == '__main__':
+    run()

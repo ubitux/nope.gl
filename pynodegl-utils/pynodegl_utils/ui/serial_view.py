@@ -20,43 +20,29 @@
 # under the License.
 #
 
-from PySide2 import QtCore, QtGui, QtWidgets
+from dearpygui.dearpygui import (
+    add_button,
+    add_input_text,
+    get_value,
+    open_file_dialog,
+    set_value,
+)
 
 
-class SerialView(QtWidgets.QWidget):
+def _save_to_file(sender, data):
+    print(sender)
+    print(data)
+    #data = get_value('##serial scene text')
+    #print(data)
+    #filename = open_file_dialog(extensions='.ngl')
+    #with open(filenames, 'w') as f:
+    #    f.write(data)
 
-    def __init__(self, get_scene_func):
-        super().__init__()
 
-        self._get_scene_func = get_scene_func
+def serial_view_set_scene(scene):
+    set_value('##serial scene text', scene)
 
-        self._save_btn = QtWidgets.QPushButton('Save to file')
-        self._graph_lbl = QtWidgets.QLabel()
-        self._text = QtWidgets.QPlainTextEdit()
-        self._text.setFont(QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.FixedFont))
-        self._text.setReadOnly(True)
 
-        hbox = QtWidgets.QHBoxLayout()
-        hbox.addStretch()
-        hbox.addWidget(self._save_btn)
-
-        serial_layout = QtWidgets.QVBoxLayout(self)
-        serial_layout.addWidget(self._text)
-        serial_layout.addLayout(hbox)
-
-        self._save_btn.clicked.connect(self._save_to_file)
-
-    @QtCore.Slot()
-    def _save_to_file(self):
-        data = self._text.toPlainText()
-        filenames = QtWidgets.QFileDialog.getSaveFileName(self, 'Select export file')
-        if not filenames[0]:
-            return
-        with open(filenames[0], 'w') as f:
-            f.write(data)
-
-    def enter(self):
-        cfg = self._get_scene_func()
-        if not cfg:
-            return
-        self._text.setPlainText(cfg['scene'].decode('ascii'))
+def serial_view():
+    add_input_text('##serial scene text', readonly=True, multiline=True)
+    add_button('Save to file', callback='_save_to_file')

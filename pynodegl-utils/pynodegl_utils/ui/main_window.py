@@ -22,62 +22,94 @@
 
 import sys
 
-from PySide2 import QtCore, QtGui, QtWidgets
-
 from pynodegl_utils.com import query_subproc
-from pynodegl_utils.config import Config
-from pynodegl_utils.scriptsmgr import ScriptsManager
-from pynodegl_utils.hooks import HooksController, HooksCaller
+#from pynodegl_utils.config import Config
+#from pynodegl_utils.scriptsmgr import ScriptsManager
+#from pynodegl_utils.hooks import HooksController, HooksCaller
 
-from pynodegl_utils.ui.graph_view import GraphView
-from pynodegl_utils.ui.export_view import ExportView
-from pynodegl_utils.ui.hooks_view import HooksView
-from pynodegl_utils.ui.medias_view import MediasView
-from pynodegl_utils.ui.serial_view import SerialView
-from pynodegl_utils.ui.toolbar import Toolbar
+#from pynodegl_utils.ui.graph_view import GraphView
+#from pynodegl_utils.ui.export_view import ExportView
+#from pynodegl_utils.ui.hooks_view import HooksView
+from pynodegl_utils.ui.medias_view import medias_view
+from pynodegl_utils.ui.serial_view import serial_view
+#from pynodegl_utils.ui.toolbar import Toolbar
+
+from dearpygui.dearpygui import (
+    add_tab,
+    add_tab_bar,
+    end_tab,
+    set_main_window_title,
+    add_button
+)
+
+def ApplyButtonCallback(sender, data):
+    print(sender)
+    print(data)
+
+def main_window():
+
+    add_button("Apply", callback="ApplyButtonCallback")
+    #add_tab_bar('hello')
+
+    #add_tab('medias view')
+    #medias_view()
+    #end_tab()
+
+    #add_tab('serial view')
+    #serial_view()
+    #end_tab()
 
 
-class MainWindow(QtWidgets.QSplitter):
+class MainWindow:
 
-    error = QtCore.Signal(str)
+    #error = QtCore.Signal(str)
 
     def __init__(self, module_pkgname, hooksdir):
-        super().__init__(QtCore.Qt.Horizontal)
+        #super().__init__(QtCore.Qt.Horizontal)
         self._win_title_base = 'Node.gl viewer'
-        self.setWindowTitle(self._win_title_base)
+        set_main_window_title(self._win_title_base)
 
         self._module_pkgname = module_pkgname
-        self._scripts_mgr = ScriptsManager(module_pkgname)
-        self._hooks_caller = HooksCaller(hooksdir)
+        #self._scripts_mgr = ScriptsManager(module_pkgname)
+        #self._hooks_caller = HooksCaller(hooksdir)
 
         get_scene_func = self._get_scene
 
-        self._config = Config(module_pkgname)
+        #self._config = Config(module_pkgname)
 
         # Apply previous geometry (position + dimensions)
-        rect = self._config.get('geometry')
-        if rect:
-            geometry = QtCore.QRect(*rect)
-            self.setGeometry(geometry)
+        #rect = self._config.get('geometry')
+        #if rect:
+        #    geometry = QtCore.QRect(*rect)
+        #    self.setGeometry(geometry)
 
-        graph_view = GraphView(get_scene_func, self._config)
-        export_view = ExportView(get_scene_func, self._config)
-        hooks_view = HooksView(self._hooks_caller)
-        self._medias_view = MediasView(self._config)
-        serial_view = SerialView(get_scene_func)
+        #graph_view = GraphView(get_scene_func, self._config)
+        #export_view = ExportView(get_scene_func, self._config)
+        #hooks_view = HooksView(self._hooks_caller)
+        #self._medias_view = MediasView(self._config)
+        #serial_view = SerialView(get_scene_func)
 
-        self._tabs = [
-            ('Hooks', hooks_view),
-            ('Graph view', graph_view),
-            ('Export', export_view),
-            ('Medias', self._medias_view),
-            ('Serialization', serial_view),
-        ]
+        #self._tabs = [
+        #    ('Hooks', hooks_view),
+        #    ('Graph view', graph_view),
+        #    ('Export', export_view),
+        #    ('Medias', self._medias_view),
+        #    ('Serialization', serial_view),
+        #]
         self._last_tab_index = -1
 
-        self._tab_widget = QtWidgets.QTabWidget()
-        for tab_name, tab_view in self._tabs:
-            self._tab_widget.addTab(tab_view, tab_name)
+        add_tab_bar('hello')
+
+        add_tab('medias view')
+        medias_view()
+        end_tab()
+
+        add_tab('serial view')
+        serial_view()
+        end_tab()
+
+        return
+
         self._tab_widget.currentChanged.connect(self._currentTabChanged)
 
         self._hooks_ctl = HooksController(self._get_scene, hooks_view, self._hooks_caller)
@@ -124,16 +156,15 @@ class MainWindow(QtWidgets.QSplitter):
         if prev_pkgname == module_pkgname:
             self._scene_toolbar.load_scene_from_name(prev_module, prev_scene)
 
-    @QtCore.Slot(str)
     def _scene_err(self, err_str):
         if err_str:
+            # XXX: logger!
             self._errbuf.setPlainText(err_str)
             self._errbuf.show()
             sys.stderr.write(err_str)
         else:
             self._errbuf.hide()
 
-    @QtCore.Slot(str)
     def _all_scripts_err(self, err_str):
         self._scene_toolbar.clear_scripts()
         self._scene_err(err_str)
@@ -162,12 +193,10 @@ class MainWindow(QtWidgets.QSplitter):
 
         return ret
 
-    @QtCore.Slot(str, str)
     def _scene_changed(self, module_name, scene_name):
         self.setWindowTitle('%s - %s.%s' % (self._win_title_base, module_name, scene_name))
         self._currentTabChanged(self._tab_widget.currentIndex())
 
-    @QtCore.Slot(str, str)
     def _scene_changed_hook(self, module_name, scene_name):
         self._hooks_ctl.process(module_name, scene_name)
 
@@ -175,23 +204,19 @@ class MainWindow(QtWidgets.QSplitter):
         geometry = (self.x(), self.y(), self.width(), self.height())
         self._config.geometry_changed(geometry)
 
-    @QtCore.Slot(QtGui.QResizeEvent)
     def resizeEvent(self, resize_event):
         super().resizeEvent(resize_event)
         self._emit_geometry()
 
-    @QtCore.Slot(QtGui.QMoveEvent)
     def moveEvent(self, move_event):
         super().moveEvent(move_event)
         self._emit_geometry()
 
-    @QtCore.Slot(QtGui.QCloseEvent)
     def closeEvent(self, close_event):
         for name, widget in self._tabs:
             widget.close()
         super().closeEvent(close_event)
 
-    @QtCore.Slot(int)
     def _currentTabChanged(self, index):
         next_view = self._tabs[index][1]
         prev_view = self._tabs[self._last_tab_index][1]
