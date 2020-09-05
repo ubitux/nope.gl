@@ -25,6 +25,7 @@ def square2circle(cfg, square_color=(0.9, 0.1, 0.3, 1.0), circle_color=(1.0, 1.0
         return (t-.75)*4
 
     n = 1024  # number of vertices
+    assert not (n & 1)
     s = 1.25  # shapes scale
     interp = 'exp_in_out'
 
@@ -44,9 +45,9 @@ def square2circle(cfg, square_color=(0.9, 0.1, 0.3, 1.0), circle_color=(1.0, 1.0
         circle_vertices.extend([x, y, 0])
 
     indices = array.array('H')
-    for i in range(1, n + 1):
-        indices.extend([0, i, i + 1])
-    indices[-1] = 1
+    for i in range(n // 2):
+        indices.extend([0, i * 2 + 1, i * 2 + 2])
+    indices.extend([0, 1])
 
     vertices_animkf = [
             ngl.AnimKeyFrameBuffer(0,               square_vertices),
@@ -62,7 +63,7 @@ def square2circle(cfg, square_color=(0.9, 0.1, 0.3, 1.0), circle_color=(1.0, 1.0
     ]
     ucolor = ngl.AnimatedVec4(color_animkf)
 
-    geom = ngl.Geometry(vertices, indices=ngl.BufferUShort(data=indices))
+    geom = ngl.Geometry(vertices, indices=ngl.BufferUShort(data=indices), topology='triangle_strip')
     p = ngl.Program(vertex=cfg.get_vert('color'), fragment=cfg.get_frag('color'))
     render = ngl.Render(geom, p)
     render.update_frag_resources(color=ucolor)

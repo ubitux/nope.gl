@@ -49,7 +49,9 @@ static int circle_init(struct ngl_node *node)
         return NGL_ERROR_INVALID_ARG;
     }
     const int nb_vertices = s->npoints + 1;
-    const int nb_indices  = s->npoints * 3;
+    const int odd = (s->npoints & 1);
+    const int nb_indice_triplets = s->npoints / 2 + odd;
+    const int nb_indices = nb_indice_triplets * 3 + (odd ? 0 : 2);
 
     float *vertices  = ngli_calloc(nb_vertices, sizeof(*vertices)  * 3);
     float *uvcoords  = ngli_calloc(nb_vertices, sizeof(*uvcoords)  * 2);
@@ -75,12 +77,15 @@ static int circle_init(struct ngl_node *node)
         vertices[i*3 + 1] = y;
         uvcoords[i*2 + 0] = (x + 1.0) / 2.0;
         uvcoords[i*2 + 1] = (1.0 - y) / 2.0;
-        indices[(i - 1) * 3 + 0]  = 0; // point to center coordinate
-        indices[(i - 1) * 3 + 1]  = i;
-        indices[(i - 1) * 3 + 2]  = i + 1;
     }
-    /* Fix overflowing vertex reference back to the start for sealing the
-     * circle */
+
+    for (int i = 0; i < nb_indice_triplets; i++) {
+        indices[i * 3 + 0] = 0; // point to center coordinate
+        indices[i * 3 + 1] = i * 2 + 1;
+        indices[i * 3 + 2] = i * 2 + 2;
+    }
+    if (!odd)
+        indices[nb_indices - 2] = 0;
     indices[nb_indices - 1] = 1;
 
     ngli_vec3_normalvec(normals, vertices, vertices + 3, vertices + 6);
@@ -116,7 +121,7 @@ static int circle_init(struct ngl_node *node)
         goto end;
     }
 
-    s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
 end:
     ngli_free(vertices);
