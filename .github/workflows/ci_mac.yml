@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  macos:
+  macos-shared:
 
     runs-on: macos-latest
 
@@ -24,3 +24,19 @@ jobs:
       run: |
         make -j$(($(sysctl -n hw.logicalcpu)+1))
 
+  macos-static:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install dependencies
+      run: |
+        brew install python3 curl pkg-config sdl2 ffmpeg
+        # https://docs.brew.sh/Homebrew-and-Python
+        python3 -m pip install --upgrade pip
+
+    - name: Build
+      run: |
+        make -j$(($(sysctl -n hw.logicalcpu)+1)) SHARED=no

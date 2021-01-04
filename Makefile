@@ -31,6 +31,7 @@ COVERAGE   ?= no
 PYTHON     ?= python$(if $(shell which python$(PYTHON_MAJOR) 2> /dev/null),$(PYTHON_MAJOR),)
 TARGET_OS  ?= $(shell uname -s)
 
+SHARED      ?= yes
 DEBUG_GL    ?= no
 DEBUG_MEM   ?= no
 DEBUG_SCENE ?= no
@@ -50,6 +51,9 @@ MESON_SETUP   = meson setup --prefix=$(PREFIX) --pkg-config-path=$(PREFIX)/lib/p
 # https://github.com/ninja-build/ninja/issues/1139#issuecomment-724061270
 MESON_COMPILE = MAKEFLAGS= meson compile
 MESON_INSTALL = meson install
+ifeq ($(SHARED),no)
+MESON_SETUP += --default-library static
+endif
 ifeq ($(COVERAGE),yes)
 MESON_SETUP += -Db_coverage=true
 DEBUG = yes
