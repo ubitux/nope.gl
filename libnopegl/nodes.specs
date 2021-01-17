@@ -149,6 +149,9 @@
     ["radius", "f32", ""],
     ["npoints", "i32", ""]
   ],
+  "ColorStats": [
+    ["texture", "node", "M"]
+  ],
   "Compute": [
     ["workgroup_count", "ivec3", ""],
     ["program", "node", "M"],

@@ -176,7 +176,7 @@ static const struct {
     },
     [MEMORY_BLOCKS_GPU] = {
         .label="Blocks GPU",
-        .node_types=(const int[]){NGL_NODE_BLOCK, -1},
+        .node_types=(const int[]){NGL_NODE_BLOCK, NGL_NODE_COLORSTATS, -1},
         .color=0xD6FF32FF,
     },
     [MEMORY_TEXTURES] = {
@@ -196,7 +196,7 @@ static const struct activity_spec {
     },
     [ACTIVITY_BLOCKS] = {
         .label="Blocks",
-        .node_types=(const int[]){NGL_NODE_BLOCK, -1},
+        .node_types=(const int[]){NGL_NODE_BLOCK, NGL_NODE_COLORSTATS, -1},
     },
     [ACTIVITY_MEDIAS] = {
         .label="Medias",
