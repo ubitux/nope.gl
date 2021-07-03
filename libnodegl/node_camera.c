@@ -33,12 +33,12 @@
 
 struct camera_priv {
     struct ngl_node *child;
-    float eye[3];
-    float center[3];
-    float up[3];
-    float perspective[2];
-    float orthographic[4];
-    float clipping[2];
+    struct vec3 eye;
+    struct vec3 center;
+    struct vec3 up;
+    struct vec3 perspective;
+    struct vec4 orthographic;
+    struct vec2 clipping;
 
     struct ngl_node *eye_transform;
     struct ngl_node *center_transform;

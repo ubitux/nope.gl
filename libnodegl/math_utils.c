@@ -92,12 +92,7 @@ void ngli_vec3_norm(float *dst, const float *v)
 
 void ngli_vec3_cross(float *dst, const float *v1, const float *v2)
 {
-    float v[3];
-
-    v[0] = v1[1]*v2[2] - v1[2]*v2[1];
-    v[1] = v1[2]*v2[0] - v1[0]*v2[2];
-    v[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
+    const float v[3] = NGLI_VEC3_CROSS(v1, v2);
     memcpy(dst, v, sizeof(v));
 }
 
@@ -110,13 +105,10 @@ float ngli_vec3_dot(const float *v1, const float *v2)
 
 void ngli_vec3_normalvec(float *dst, const float *a, const float *b, const float *c)
 {
-    float d[3];
-    float e[3];
-
-    ngli_vec3_sub(d, b, a);
-    ngli_vec3_sub(e, c, a);
-    ngli_vec3_cross(dst, d, e);
-    ngli_vec3_norm(dst, dst);
+    const float d[3] = NGLI_VEC3_SUB(b, a);
+    const float e[3] = NGLI_VEC3_SUB(c, a);
+    const float cross[3] = NGLI_VEC3_CROSS(d, e);
+    ngli_vec3_norm(dst, cross);
 }
 
 float ngli_vec4_length(const float *v)
@@ -341,13 +333,7 @@ void ngli_mat4_look_at(float *dst, float *eye, float *center, float *up)
 
 void ngli_mat4_identity(float *dst)
 {
-    static const float id[4*4] = {
-        1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 1.0f,
-    };
-
+    static const float id[4*4] = NGLI_MAT4_IDENTITY;
     memcpy(dst, id, sizeof(id));
 }
 
