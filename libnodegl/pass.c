@@ -95,7 +95,7 @@ static int register_builtin_uniforms(struct pass *s)
         {.name = "ngl_modelview_matrix",  .type = NGLI_TYPE_MAT4, .stage=NGLI_PROGRAM_SHADER_VERT, .data = NULL},
         {.name = "ngl_projection_matrix", .type = NGLI_TYPE_MAT4, .stage=NGLI_PROGRAM_SHADER_VERT, .data = NULL},
         {.name = "ngl_normal_matrix",     .type = NGLI_TYPE_MAT3, .stage=NGLI_PROGRAM_SHADER_VERT, .data = NULL},
-        {.name = "ngl_resolution",        .type = NGLI_TYPE_VEC2, .stage=NGLI_PROGRAM_SHADER_FRAG, .data = NULL},
+        {.name = "ngl_resolution",        .type = NGLI_TYPE_VEC4, .stage=NGLI_PROGRAM_SHADER_FRAG, .data = NULL},
     };
 
     for (int i = 0; i < NGLI_ARRAY_NB(crafter_uniforms); i++) {
@@ -704,7 +704,7 @@ int ngli_pass_exec(struct pass *s)
     int viewport[4] = {0};
     ngli_gpu_ctx_get_viewport(ctx->gpu_ctx, viewport);
 
-    const float resolution[2] = {viewport[2], viewport[3]};
+    const float resolution[4] = {NGLI_ARG_VEC4(viewport)};
     ngli_pipeline_update_uniform(pipeline, desc->resolution_index, resolution);
 
     if (desc->normal_matrix_index >= 0) {
