@@ -184,12 +184,15 @@ class Toolbar(QtWidgets.QWidget):
         if not widgets:
             return None
 
-        groupbox = QtWidgets.QGroupBox('Custom scene options')
         vbox = QtWidgets.QVBoxLayout()
         for widget in widgets:
             vbox.addWidget(widget)
-        groupbox.setLayout(vbox)
-        return groupbox
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(vbox)
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidget(widget)
+        return scroll
 
     def get_cfg(self):
         choices = Config.CHOICES
