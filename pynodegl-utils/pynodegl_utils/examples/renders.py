@@ -117,17 +117,21 @@ vec3 gradient_linear(vec3 tl, vec3 tr, vec3 br, vec3 bl, vec2 uv)
 '''
 
 @scene(
-    c_tl=scene.Color(),
-    c_tr=scene.Color(),
-    c_br=scene.Color(),
-    c_bl=scene.Color(),
+    #c_tl=scene.Color(),
+    #c_tr=scene.Color(),
+    #c_br=scene.Color(),
+    #c_bl=scene.Color(),
     linear=scene.Bool(),
 )
 def gradient(cfg,
-    c_tl=COLORS.cyan,
-    c_tr=COLORS.magenta,
-    c_br=COLORS.yellow,
-    c_bl=COLORS.black,
+    #c_tl=COLORS.cyan,
+    #c_tr=COLORS.magenta,
+    #c_br=COLORS.yellow,
+    #c_bl=COLORS.black,
+    c_tl=(1., .5, 0., 1.),
+    c_tr=(0., 1., 0., 1.),
+    c_br=(0., .5, 1., 1.),
+    c_bl=(1., 0., 1., 1.),
     linear=True,
 ):
     frag = _gradient_helpers + '''
@@ -197,6 +201,152 @@ void main()
         )),
         linear=ngl.UniformBool(linear),
     )
+
+
+@scene(linear=scene.Bool())
+def gradient4(cfg, linear=True):
+    frag = '''
+#define linear2srgb(x) ((x) < 0.0031308 ? (x)*12.92 : 1.055*pow((x),1.0/2.4)-0.055)
+#define srgb2linear(x) ((x) < 0.04045   ? (x)/12.92 : pow((x+.055)/1.055, 2.4))
+
+#define linear_clr(x) vec3(srgb2linear((x).r), srgb2linear((x).g), srgb2linear((x).b))
+#define srgb_clr(x)   vec3(linear2srgb((x).r), linear2srgb((x).g), linear2srgb((x).b))
+
+#define PI 3.14159265358979323846
+
+void main()
+{
+    vec2 p = uv*2.0-1.0;
+
+#if 1
+    vec2 a = sin(time * vec2( 0.307,-0.190) + vec2( 0.703,-0.957));
+    vec2 b = sin(time * vec2(-0.236, 0.218) + vec2(-0.851,-0.904));
+    vec2 c = sin(time * vec2(-0.615,-0.165) + vec2(-0.162,-0.647));
+    vec2 d = sin(time * vec2( 0.085,-0.654) + vec2( 0.163, 0.494));
+#else
+    vec2 a = vec2(-1,-1);
+    vec2 b = vec2( 1,-1);
+    vec2 c = vec2(-1, 1);
+    vec2 d = vec2( 1, 1);
+#endif
+
+    vec2 pa = p - a;
+    vec2 pb = p - b;
+    vec2 pc = p - c;
+    vec2 pd = p - d;
+
+    vec3 c0 = vec3(1., .5, 0.);
+    vec3 c1 = vec3(0., 1., 0.);
+    vec3 c2 = vec3(1., 0., 1.);
+    vec3 c3 = vec3(0., .5, 1.);
+
+#if 1
+    float pw = 3.0;
+    float da = pow(1./length(pa), pw);
+    float db = pow(1./length(pb), pw);
+    float dc = pow(1./length(pc), pw);
+    float dd = pow(1./length(pd), pw);
+    float nf = da + db + dc + dd;
+    vec3 clr = da/nf*linear_clr(c0)
+             + db/nf*linear_clr(c1)
+             + dc/nf*linear_clr(c2)
+             + dd/nf*linear_clr(c3);
+    clr = srgb_clr(clr);
+
+
+#elif 1
+#define det(a,b) ((a).x*(b).y - (a).y*(b).x)
+
+#define orient(a,b,c) (((b).y - (a).y)*((c).x - (b).x) - ((c).y - (b).y)*((b).x - (a).x))
+#define swap2(a,b) vec2 x = a; a = b; b = x
+#define swap3(a,b) vec3 y = a; a = b; b = y
+
+    float o_abc = orient(a,b,c);
+    float o_acd = orient(a,c,d);
+    float o_abd = orient(a,b,d);
+
+    if (o_abc < 0.0) {
+        if (o_acd < 0.0) {
+            if (o_abd < 0.0) {
+                swap2(b, d);
+                //swap3(c1, c3);
+            }
+        } else {
+            if (o_abd < 0.0) {
+                swap2(a, b);
+                //swap3(c0, c1);
+            } else {
+                swap2(b, c);
+                //swap3(c1, c2);
+            }
+        }
+    } else {
+        if (o_acd < 0.0) {
+            if (o_abd < 0.0) {
+                swap2(a, d);
+                //swap3(c0, c3);
+            } else {
+                swap2(c, d);
+                //swap3(c2, c3);
+            }
+        }
+    }
+
+    vec2 sa = a - p;
+    vec2 sb = b - p;
+    vec2 sc = c - p;
+    vec2 sd = d - p;
+    vec4 r = vec4(length(sa), length(sb), length(sc), length(sd));
+    vec4 A = vec4(det(sa, sb), det(sb, sc), det(sc, sd), det(sd, sa));
+    vec4 D = vec4(dot(sa, sb), dot(sb, sc), dot(sc, sd), dot(sd, sa));
+    float w0 = (r[3] - D[3]/r[0])/A[3] + (r[1] - D[0]/r[0])/A[0];
+    float w1 = (r[0] - D[0]/r[1])/A[0] + (r[2] - D[1]/r[1])/A[1];
+    float w2 = (r[1] - D[1]/r[2])/A[1] + (r[3] - D[2]/r[2])/A[2];
+    float w3 = (r[2] - D[2]/r[3])/A[2] + (r[0] - D[3]/r[3])/A[3];
+    vec3 clr = w0 * linear_clr(c0)
+             + w1 * linear_clr(c1)
+             + w2 * linear_clr(c2)
+             + w3 * linear_clr(c3);
+    clr /= (w0 + w1 + w2 + w3);
+
+    clr = srgb_clr(clr);
+
+#elif 0
+    float la = 1.-length(pa)/(4./s);
+    float lb = 1.-length(pb)/(4./s);
+    float lc = 1.-length(pc)/(4./s);
+    float ld = 1.-length(pd)/(4./s);
+
+    vec3 clr = la*linear_clr(c0)
+             + lb*linear_clr(c1)
+             + lc*linear_clr(c2)
+             + ld*linear_clr(c3);
+    clr /= 4;
+
+    clr = srgb_clr(clr);
+#else
+    vec3 clr = smoothstep(.15, .13, length(pa))*c0
+             + smoothstep(.15, .13, length(pb))*c1
+             + smoothstep(.15, .13, length(pc))*c2
+             + smoothstep(.15, .13, length(pd))*c3;
+#endif
+
+    ngl_out_color = vec4(clr, 1.0);
+}
+'''
+
+    cfg.duration = 15.0
+    return _render(
+        frag,
+        #time=ngl.Time(),
+        time=ngl.AnimatedFloat(keyframes=(
+            ngl.AnimKeyFrameFloat(0, 0),
+            ngl.AnimKeyFrameFloat(cfg.duration, cfg.duration*3.0),
+        )),
+        linear=ngl.UniformBool(linear),
+    )
+
+
 
 
 @scene(
