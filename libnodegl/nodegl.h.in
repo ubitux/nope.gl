@@ -164,6 +164,7 @@ struct ngl_node;
 #define NGL_NODE_FILTERCONTRAST         NGLI_FOURCC('F','c','t','r')
 #define NGL_NODE_FILTEREXPOSURE         NGLI_FOURCC('F','e','x','p')
 #define NGL_NODE_FILTERINVERSEALPHA     NGLI_FOURCC('F','1','-','a')
+#define NGL_NODE_FILTERLIFTGAMMAGAIN    NGLI_FOURCC('F','l','g','g')
 #define NGL_NODE_FILTERLINEAR2SRGB      NGLI_FOURCC('F','r','g','b')
 #define NGL_NODE_FILTEROPACITY          NGLI_FOURCC('F','o','p','a')
 #define NGL_NODE_FILTERPREMULT          NGLI_FOURCC('F','p','r','e')

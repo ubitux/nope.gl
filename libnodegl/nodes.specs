@@ -204,6 +204,14 @@ FilterExposure:
 
 FilterInverseAlpha:
 
+FilterLiftGammaGain:
+    - [lift, vec3, "LN"]
+    - [gamma, vec3, "LN"]
+    - [gain, vec3, "LN"]
+    - [lift_off, f32, "LN"]
+    - [gamma_off, f32, "LN"]
+    - [gain_off, f32, "LN"]
+
 FilterLinear2sRGB:
 
 FilterOpacity:

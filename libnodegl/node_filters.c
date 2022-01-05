@@ -32,6 +32,7 @@
 #include "filter_contrast.h"
 #include "filter_exposure.h"
 #include "filter_inversealpha.h"
+#include "filter_liftgammagain.h"
 #include "filter_linear2srgb.h"
 #include "filter_opacity.h"
 #include "filter_premult.h"
@@ -71,6 +72,25 @@ struct filterinversealpha_priv {
     struct filter filter;
 };
 
+struct filterliftgammagain_opts {
+    struct ngl_node *lift_node;
+    float lift[3];
+    struct ngl_node *gamma_node;
+    float gamma[3];
+    struct ngl_node *gain_node;
+    float gain[3];
+    struct ngl_node *lift_off_node;
+    float lift_off;
+    struct ngl_node *gamma_off_node;
+    float gamma_off;
+    struct ngl_node *gain_off_node;
+    float gain_off;
+};
+
+struct filterliftgammagain_priv {
+    struct filter filter;
+};
+
 struct filterlinear2srgb_priv {
     struct filter filter;
 };
@@ -107,6 +127,7 @@ NGLI_STATIC_ASSERT(filter_on_top_of_alpha_priv,         offsetof(struct filteral
 NGLI_STATIC_ASSERT(filter_on_top_of_contrast_priv,      offsetof(struct filtercontrast_priv,      filter) == 0);
 NGLI_STATIC_ASSERT(filter_on_top_of_exposure_priv,      offsetof(struct filterexposure_priv,      filter) == 0);
 NGLI_STATIC_ASSERT(filter_on_top_of_inversealpha_priv,  offsetof(struct filterinversealpha_priv,  filter) == 0);
+NGLI_STATIC_ASSERT(filter_on_top_of_liftgammagain_priv, offsetof(struct filterliftgammagain_priv, filter) == 0);
 NGLI_STATIC_ASSERT(filter_on_top_of_linear2srgb_priv,   offsetof(struct filterlinear2srgb_priv,   filter) == 0);
 NGLI_STATIC_ASSERT(filter_on_top_of_opacity_priv,       offsetof(struct filteropacity_priv,       filter) == 0);
 NGLI_STATIC_ASSERT(filter_on_top_of_premult_priv,       offsetof(struct filterpremult_priv,       filter) == 0);
@@ -145,6 +166,30 @@ static const struct node_param filterexposure_params[] = {
 
 #define filterinversealpha_params NULL
 #define filterlinear2srgb_params NULL
+
+#define OFFSET(x) offsetof(struct filterliftgammagain_opts, x)
+static const struct node_param filterliftgammagain_params[] = {
+    {"lift",      NGLI_PARAM_TYPE_VEC3, OFFSET(lift_node),
+                  .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                  .desc=NGLI_DOCSTRING("lift")},
+    {"gamma",     NGLI_PARAM_TYPE_VEC3, OFFSET(gamma_node),
+                  .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                  .desc=NGLI_DOCSTRING("gamma")},
+    {"gain",      NGLI_PARAM_TYPE_VEC3, OFFSET(gain_node),
+                  .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                  .desc=NGLI_DOCSTRING("gain")},
+    {"lift_off",  NGLI_PARAM_TYPE_F32, OFFSET(lift_off_node),
+                  .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                  .desc=NGLI_DOCSTRING("lift offset")},
+    {"gamma_off", NGLI_PARAM_TYPE_F32, OFFSET(gamma_off_node),
+                  .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                  .desc=NGLI_DOCSTRING("gamma offset")},
+    {"gain_off",  NGLI_PARAM_TYPE_F32, OFFSET(gain_off_node),
+                  .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                  .desc=NGLI_DOCSTRING("gain offset")},
+    {NULL}
+};
+#undef OFFSET
 
 #define OFFSET(x) offsetof(struct filteropacity_opts, x)
 static const struct node_param filteropacity_params[] = {
@@ -241,6 +286,26 @@ static int filterinversealpha_init(struct ngl_node *node)
     return 0;
 }
 
+static int filterliftgammagain_init(struct ngl_node *node)
+{
+    int ret = filter_init(node);
+    if (ret < 0)
+        return ret;
+    struct filterliftgammagain_priv *s = node->priv_data;
+    struct filterliftgammagain_opts *o = node->opts;
+    s->filter.name = "liftgammagain";
+    s->filter.code = filter_liftgammagain_glsl;
+    s->filter.helpers = NGLI_FILTER_HELPER_LINEAR2SRGB | NGLI_FILTER_HELPER_SRGB2LINEAR | NGLI_FILTER_HELPER_MISC_UTILS;
+    if ((ret = register_resource(&s->filter.resources, "lift", o->lift_node, &o->lift, NGLI_TYPE_VEC3)) < 0 ||
+        (ret = register_resource(&s->filter.resources, "gamma", o->gamma_node, &o->gamma, NGLI_TYPE_VEC3)) < 0 ||
+        (ret = register_resource(&s->filter.resources, "gain", o->gain_node, &o->gain, NGLI_TYPE_VEC3)) < 0 ||
+        (ret = register_resource(&s->filter.resources, "lift_off", o->lift_off_node, &o->lift_off, NGLI_TYPE_FLOAT)) < 0 ||
+        (ret = register_resource(&s->filter.resources, "gamma_off", o->gamma_off_node, &o->gamma_off, NGLI_TYPE_FLOAT)) < 0 ||
+        (ret = register_resource(&s->filter.resources, "gain_off", o->gain_off_node, &o->gain_off, NGLI_TYPE_FLOAT)) < 0)
+        return ret;
+    return 0;
+}
+
 static int filterlinear2srgb_init(struct ngl_node *node)
 {
     int ret = filter_init(node);
@@ -324,6 +389,7 @@ DECLARE_FILTER(alpha,        NGL_NODE_FILTERALPHA,        sizeof(struct filteral
 DECLARE_FILTER(contrast,     NGL_NODE_FILTERCONTRAST,     sizeof(struct filtercontrast_opts),   "FilterContrast")
 DECLARE_FILTER(exposure,     NGL_NODE_FILTEREXPOSURE,     sizeof(struct filterexposure_opts),   "FilterExposure")
 DECLARE_FILTER(inversealpha, NGL_NODE_FILTERINVERSEALPHA, 0,                                    "FilterInverseAlpha")
+DECLARE_FILTER(liftgammagain, NGL_NODE_FILTERLIFTGAMMAGAIN, sizeof(struct filterliftgammagain_opts), "FilterLiftGammaGain")
 DECLARE_FILTER(linear2srgb,  NGL_NODE_FILTERLINEAR2SRGB,  0,                                    "FilterLinear2sRGB")
 DECLARE_FILTER(opacity,      NGL_NODE_FILTEROPACITY,      sizeof(struct filteropacity_opts),    "FilterOpacity")
 DECLARE_FILTER(premult,      NGL_NODE_FILTERPREMULT,      0,                                    "FilterPremult")

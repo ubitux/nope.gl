@@ -59,6 +59,7 @@
                                          NGL_NODE_FILTERCONTRAST,       \
                                          NGL_NODE_FILTEREXPOSURE,       \
                                          NGL_NODE_FILTERINVERSEALPHA,   \
+                                         NGL_NODE_FILTERLIFTGAMMAGAIN,  \
                                          NGL_NODE_FILTERLINEAR2SRGB,    \
                                          NGL_NODE_FILTEROPACITY,        \
                                          NGL_NODE_FILTERPREMULT,        \

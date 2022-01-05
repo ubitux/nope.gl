@@ -598,6 +598,7 @@ shaders = {
   'filter_contrast.glsl': 'filter_contrast.h',
   'filter_exposure.glsl': 'filter_exposure.h',
   'filter_inversealpha.glsl': 'filter_inversealpha.h',
+  'filter_liftgammagain.glsl': 'filter_liftgammagain.h',
   'filter_linear2srgb.glsl': 'filter_linear2srgb.h',
   'filter_opacity.glsl': 'filter_opacity.h',
   'filter_premult.glsl': 'filter_premult.h',
