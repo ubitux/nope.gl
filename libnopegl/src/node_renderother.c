@@ -44,6 +44,8 @@
 #include "source_gradient_vert.h"
 #include "source_gradient4_frag.h"
 #include "source_gradient4_vert.h"
+#include "source_grid_frag.h"
+#include "source_grid_vert.h"
 #include "source_texture_frag.h"
 #include "source_texture_vert.h"
 
@@ -78,6 +80,7 @@ struct pipeline_desc {
     int modelview_matrix_index;
     int projection_matrix_index;
     int aspect_index;
+    int resolution_index;
     struct darray uniforms_map; // struct uniform_map
     struct darray uniforms; // struct pgcraft_uniform
 };
@@ -162,6 +165,22 @@ struct rendergradient4_opts {
 };
 
 struct rendergradient4_priv {
+    struct render_common common;
+};
+
+struct rendergrid_opts {
+    struct ngl_node *color_node;
+    float color[3];
+    struct ngl_node *opacity_node;
+    float opacity;
+    int32_t thickness;
+    struct ngl_node *dimensions_node;
+    float dimensions[2];
+    struct render_common_opts common;
+};
+
+struct rendergrid_priv {
+    float thickness_f;
     struct render_common common;
 };
 
@@ -275,6 +294,31 @@ static const struct node_param rendergradient4_params[] = {
     {"linear",     NGLI_PARAM_TYPE_BOOL, OFFSET(linear_node), {.i32=1},
                    .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
                    .desc=NGLI_DOCSTRING("interpolate colors linearly")},
+    {"blending",   NGLI_PARAM_TYPE_SELECT, OFFSET(common.blending),
+                   .choices=&ngli_blending_choices,
+                   .desc=NGLI_DOCSTRING("define how this node and the current frame buffer are blending together")},
+    {"geometry",   NGLI_PARAM_TYPE_NODE, OFFSET(common.geometry),
+                   .node_types=GEOMETRY_TYPES_LIST,
+                   .desc=NGLI_DOCSTRING("geometry to be rasterized")},
+    {"filters",    NGLI_PARAM_TYPE_NODELIST, OFFSET(common.filters),
+                   .node_types=FILTERS_TYPES_LIST,
+                   .desc=NGLI_DOCSTRING("filter chain to apply on top of this source")},
+    {NULL}
+};
+#undef OFFSET
+
+#define OFFSET(x) offsetof(struct rendergrid_opts, x)
+static const struct node_param rendergrid_params[] = {
+    {"color",      NGLI_PARAM_TYPE_VEC3, OFFSET(color_node), {.vec={1.f, 1.f, 1.f}},
+                   .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                   .desc=NGLI_DOCSTRING("grid color")},
+    {"opacity",    NGLI_PARAM_TYPE_F32, OFFSET(opacity_node), {.f32=1.f},
+                   .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                   .desc=NGLI_DOCSTRING("grid opacity")},
+    {"thickness",  NGLI_PARAM_TYPE_I32, OFFSET(thickness), {.i32=1},
+                   .desc=NGLI_DOCSTRING("thickness in pixels")},
+    {"dimensions", NGLI_PARAM_TYPE_VEC2, OFFSET(dimensions), {.vec={5, 5}},
+                   .desc=NGLI_DOCSTRING("number of rows and columns")},
     {"blending",   NGLI_PARAM_TYPE_SELECT, OFFSET(common.blending),
                    .choices=&ngli_blending_choices,
                    .desc=NGLI_DOCSTRING("define how this node and the current frame buffer are blending together")},
@@ -462,6 +506,13 @@ static int rendergradient4_init(struct ngl_node *node)
     return init(node, &s->common, &o->common, "source_gradient4", source_gradient4_frag);
 }
 
+static int rendergrid_init(struct ngl_node *node)
+{
+    struct rendergrid_priv *s = node->priv_data;
+    struct rendergrid_opts *o = node->opts;
+    return init(node, &s->common, &o->common, "source_grid", source_grid_frag);
+}
+
 static int rendertexture_init(struct ngl_node *node)
 {
     struct rendertexture_priv *s = node->priv_data;
@@ -586,6 +637,7 @@ static int finalize_pipeline(struct ngl_node *node,
     desc->modelview_matrix_index = ngli_pgcraft_get_uniform_index(desc->crafter, "modelview_matrix", NGLI_PROGRAM_SHADER_VERT);
     desc->projection_matrix_index = ngli_pgcraft_get_uniform_index(desc->crafter, "projection_matrix", NGLI_PROGRAM_SHADER_VERT);
     desc->aspect_index = ngli_pgcraft_get_uniform_index(desc->crafter, "aspect", NGLI_PROGRAM_SHADER_FRAG);
+    desc->resolution_index = ngli_pgcraft_get_uniform_index(desc->crafter, "resolution", NGLI_PROGRAM_SHADER_FRAG);
     return 0;
 }
 
@@ -720,6 +772,50 @@ static int rendergradient4_prepare(struct ngl_node *node)
     return finalize_pipeline(node, c, co, &crafter_params);
 }
 
+static int rendergrid_prepare(struct ngl_node *node)
+{
+    struct rendergrid_priv *s = node->priv_data;
+    struct rendergrid_opts *o = node->opts;
+
+    s->thickness_f = (float)o->thickness;
+
+    const struct pgcraft_uniform uniforms[] = {
+        {.name="modelview_matrix",  .type=NGLI_TYPE_MAT4,  .stage=NGLI_PROGRAM_SHADER_VERT},
+        {.name="projection_matrix", .type=NGLI_TYPE_MAT4,  .stage=NGLI_PROGRAM_SHADER_VERT},
+        {.name="resolution",        .type=NGLI_TYPE_VEC2,  .stage=NGLI_PROGRAM_SHADER_FRAG},
+        {.name="color",             .type=NGLI_TYPE_VEC3,  .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->color_node, o->color)},
+        {.name="opacity",           .type=NGLI_TYPE_F32,   .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->opacity_node, &o->opacity)},
+        {.name="thickness",         .type=NGLI_TYPE_F32,   .stage=NGLI_PROGRAM_SHADER_FRAG, .data=&s->thickness_f},
+        {.name="dimensions",        .type=NGLI_TYPE_VEC2,  .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->dimensions_node, &o->dimensions)},
+    };
+
+    struct render_common *c = &s->common;
+    int ret = init_desc(node, c, uniforms, NGLI_ARRAY_NB(uniforms));
+    if (ret < 0)
+        return ret;
+
+    static const struct pgcraft_iovar vert_out_vars[] = {
+        {.name = "uv", .type = NGLI_TYPE_VEC2},
+    };
+
+    const struct pipeline_desc *descs = ngli_darray_data(&c->pipeline_descs);
+    const struct pipeline_desc *desc = &descs[node->ctx->rnode_pos->id];
+    const struct pgcraft_attribute attributes[] = {c->position_attr, c->uvcoord_attr};
+    const struct pgcraft_params crafter_params = {
+        .vert_base        = source_grid_vert,
+        .frag_base        = c->combined_fragment,
+        .uniforms         = ngli_darray_data(&desc->uniforms),
+        .nb_uniforms      = ngli_darray_count(&desc->uniforms),
+        .attributes       = attributes,
+        .nb_attributes    = NGLI_ARRAY_NB(attributes),
+        .vert_out_vars    = vert_out_vars,
+        .nb_vert_out_vars = NGLI_ARRAY_NB(vert_out_vars),
+    };
+
+    const struct render_common_opts *co = &o->common;
+    return finalize_pipeline(node, c, co, &crafter_params);
+}
+
 static int rendertexture_prepare(struct ngl_node *node)
 {
     struct ngl_ctx *ctx = node->ctx;
@@ -792,11 +888,17 @@ static void renderother_draw(struct ngl_node *node, struct render_common *s, con
     ngli_pipeline_compat_update_uniform(pl_compat, desc->modelview_matrix_index, modelview_matrix);
     ngli_pipeline_compat_update_uniform(pl_compat, desc->projection_matrix_index, projection_matrix);
 
-    if (desc->aspect_index >= 0) {
+    if (desc->aspect_index >= 0 || desc->resolution_index >= 0) {
         int viewport[4] = {0};
         ngli_gpu_ctx_get_viewport(ctx->gpu_ctx, viewport);
-        const float aspect = viewport[2] / (float)viewport[3];
-        ngli_pipeline_compat_update_uniform(pl_compat, desc->aspect_index, &aspect);
+        if (desc->aspect_index >= 0) {
+            const float aspect = viewport[2] / (float)viewport[3];
+            ngli_pipeline_compat_update_uniform(pl_compat, desc->aspect_index, &aspect);
+        }
+        if (desc->resolution_index >= 0) {
+            const float resolution[2] = {viewport[2], viewport[3]};
+            ngli_pipeline_compat_update_uniform(pl_compat, desc->resolution_index, resolution);
+        }
     }
 
     const struct uniform_map *map = ngli_darray_data(&desc->uniforms_map);
@@ -868,4 +970,5 @@ const struct node_class ngli_##type##_class = {     \
 DECLARE_RENDEROTHER(rendercolor,     NGL_NODE_RENDERCOLOR,     "RenderColor")
 DECLARE_RENDEROTHER(rendergradient,  NGL_NODE_RENDERGRADIENT,  "RenderGradient")
 DECLARE_RENDEROTHER(rendergradient4, NGL_NODE_RENDERGRADIENT4, "RenderGradient4")
+DECLARE_RENDEROTHER(rendergrid,      NGL_NODE_RENDERGRID,      "RenderGrid")
 DECLARE_RENDEROTHER(rendertexture,   NGL_NODE_RENDERTEXTURE,   "RenderTexture")

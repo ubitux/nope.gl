@@ -695,3 +695,35 @@ def gradient_eval(cfg: SceneCfg, mode="ramp", c0=(1, 0.5, 0.5), c1=(0.5, 1, 0.5)
     grad = ngl.RenderGradient(pos0=pos0, pos1=pos1, mode=mode, color0=c0, color1=c1)
 
     return ngl.Group(children=(grad, p0, p1))
+
+
+@scene()
+def grid(cfg):
+    cfg.aspect_ratio = (16, 10)
+    return ngl.Group(
+        children=(
+            ngl.RenderGradient4(),
+            ngl.RenderGrid(
+                dimensions=(10, 10),
+                thickness=1,
+                color=(1, 1, 1),
+                opacity=0.5,
+                blending="src_over",
+            ),
+            #ngl.RenderGrid(
+            #    dimensions=(cfg.aspect_ratio[0] / 2, cfg.aspect_ratio[1] / 2),
+            #    thickness=3,
+            #    color=(1, 1, 1),
+            #    opacity=0.8,
+            #    blending="src_over",
+            #    geometry=ngl.Circle(),
+            #),
+            ngl.RenderGrid(
+                dimensions=(2, 2),
+                thickness=3,
+                color=(1, 1, 1),
+                opacity=1,
+                blending="src_over",
+            ),
+        )
+    )

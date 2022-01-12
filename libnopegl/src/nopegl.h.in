@@ -204,6 +204,7 @@ struct ngl_node;
 #define NGL_NODE_RENDERCOLOR            NGLI_FOURCC('R','c','l','r')
 #define NGL_NODE_RENDERGRADIENT         NGLI_FOURCC('R','g','r','d')
 #define NGL_NODE_RENDERGRADIENT4        NGLI_FOURCC('R','g','d','4')
+#define NGL_NODE_RENDERGRID             NGLI_FOURCC('R','d','i','v')
 #define NGL_NODE_RENDERTEXTURE          NGLI_FOURCC('R','t','e','x')
 #define NGL_NODE_RENDERTOTEXTURE        NGLI_FOURCC('R','T','T',' ')
 #define NGL_NODE_RESOURCEPROPS          NGLI_FOURCC('R','e','s','P')
