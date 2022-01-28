@@ -46,6 +46,7 @@ static int transform_update(struct ngl_node *node, double t)
 
 const struct node_class ngli_transform_class = {
     .id        = NGL_NODE_TRANSFORM,
+    .category  = NGLI_NODE_CATEGORY_TRANSFORM,
     .name      = "Transform",
     .update    = transform_update,
     .draw      = ngli_transform_draw,

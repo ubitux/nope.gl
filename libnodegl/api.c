@@ -42,6 +42,7 @@
 #include "internal.h"
 #include "pgcache.h"
 #include "rnode.h"
+#include "transform_chains.h"
 #include "pthread_compat.h"
 
 #if defined(HAVE_VAAPI)
@@ -111,6 +112,7 @@ static int cmd_reset(struct ngl_ctx *s, void *arg)
             ngl_node_unrefp(&s->scene);
     }
     ngli_rnode_reset(&s->rnode);
+    ngli_transform_chains_reset(&s->trfs);
 #if defined(HAVE_VAAPI)
     ngli_vaapi_ctx_reset(&s->vaapi_ctx);
 #endif
@@ -165,6 +167,8 @@ static int cmd_configure(struct ngl_ctx *s, void *arg)
     s->rnode_pos = &s->rnode;
     s->rnode_pos->graphicstate = NGLI_GRAPHICSTATE_DEFAULTS;
     s->rnode_pos->rendertarget_desc = *ngli_gpu_ctx_get_default_rendertarget_desc(s->gpu_ctx);
+
+    ngli_transform_chains_init(&s->trfs);
 
     ret = ngli_pgcache_init(&s->pgcache, s->gpu_ctx);
     if (ret < 0)
@@ -255,10 +259,14 @@ static int cmd_set_scene(struct ngl_ctx *s, void *arg)
     }
     ngli_rnode_reset(&s->rnode);
 
+    ngli_transform_chains_reset(&s->trfs);
+
     ngli_rnode_init(&s->rnode);
     s->rnode_pos = &s->rnode;
     s->rnode_pos->graphicstate = NGLI_GRAPHICSTATE_DEFAULTS;
     s->rnode_pos->rendertarget_desc = *ngli_gpu_ctx_get_default_rendertarget_desc(s->gpu_ctx);
+
+    ngli_transform_chains_init(&s->trfs);
 
     struct ngl_node *scene = arg;
     if (!scene)

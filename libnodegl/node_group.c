@@ -78,6 +78,7 @@ static void group_draw(struct ngl_node *node)
 
 const struct node_class ngli_group_class = {
     .id        = NGL_NODE_GROUP,
+    .category  = NGLI_NODE_CATEGORY_SPLITTER,
     .name      = "Group",
     .prepare   = group_prepare,
     .update    = ngli_node_update_children,

@@ -201,6 +201,7 @@ static void node_uninit(struct ngl_node *node)
     ngli_assert(node->ctx);
     ngli_darray_reset(&node->children);
     ngli_darray_reset(&node->parents);
+    ngli_darray_reset(&node->trf_indexes);
     node_release(node);
 
     if (node->cls->uninit) {
@@ -308,6 +309,7 @@ static int node_init(struct ngl_node *node)
 
     ngli_darray_init(&node->children, sizeof(struct ngl_node *), 0);
     ngli_darray_init(&node->parents, sizeof(struct ngl_node *), 0);
+    ngli_darray_init(&node->trfs_indexes, sizeof(int), 0);
 
     ngli_assert(node->ctx);
     if (node->cls->init) {

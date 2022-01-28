@@ -133,6 +133,7 @@ static void userselect_draw(struct ngl_node *node)
 
 const struct node_class ngli_userselect_class = {
     .id             = NGL_NODE_USERSELECT,
+    .category       = NGLI_NODE_CATEGORY_SPLITTER,
     .name           = "UserSelect",
     .prepare        = userselect_prepare,
     .visit          = userselect_visit,

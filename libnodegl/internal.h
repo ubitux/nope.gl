@@ -57,6 +57,7 @@
 #include "format.h"
 #include "rendertarget.h"
 #include "rnode.h"
+#include "transform_chains.h"
 #include "texture.h"
 
 struct node_class;
@@ -72,6 +73,7 @@ struct ngl_ctx {
     struct gpu_ctx *gpu_ctx;
     struct rnode rnode;
     struct rnode *rnode_pos;
+    struct transform_chains trfs;
     struct ngl_node *scene;
     struct ngl_config config;
     struct rendertarget *available_rendertargets[2];
@@ -126,6 +128,7 @@ struct ngl_node {
 
     struct darray children;
     struct darray parents;
+    struct darray trfs_indexes;
 
     char *label;
 
@@ -470,6 +473,8 @@ enum {
     NGLI_NODE_CATEGORY_BLOCK,
     NGLI_NODE_CATEGORY_IO,
     NGLI_NODE_CATEGORY_RENDER, /* node executes a graphics pipeline */
+    NGLI_NODE_CATEGORY_TRANSFORM,
+    NGLI_NODE_CATEGORY_SPLITTER,
 };
 
 /*

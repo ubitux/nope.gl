@@ -85,6 +85,7 @@ NGLI_STATIC_ASSERT(trf_on_top_of_translate, OFFSET(trf) == 0);
 
 const struct node_class ngli_translate_class = {
     .id        = NGL_NODE_TRANSLATE,
+    .category  = NGLI_NODE_CATEGORY_TRANSFORM,
     .name      = "Translate",
     .init      = translate_init,
     .update    = translate_update,
