@@ -103,6 +103,38 @@ int ngli_transform_chains_alloc_chains(struct transform_chains *s, struct ngl_no
     return alloc_chains_rec(s, node, 0);
 }
 
+static int update_chains(struct transform_chains *s, struct ngl_node *node, double t, int position)
+{
+    struct darray *children_array = &node->children;
+    struct ngl_node **children = ngli_darray_data(children_array);
+
+    int ret = ngli_darray_push(node->trf_indexes, &position);
+    if (ret < 0)
+        return ret;
+
+    if (node->cls->category == NGLI_NODE_CATEGORY_TRANSFORM) {
+
+    } else if (node->cls->category == NGLI_NODE_CATEGORY_SPLITTER) {
+
+    } else if (node->cls->category == NGLI_NODE_CATEGORY_RENDER) {
+
+    }
+    if (ret < 0)
+        return ret;
+
+    const int inc_chain = node->cls->category == NGLI_NODE_CATEGORY_SPLITTER;
+    for (int i = 0; i < ngli_darray_count(children_array); i++) {
+        struct ngl_node *child = children[i];
+
+        ret = update_chains(child, t, position + 1);
+        if (ret < 0)
+            return ret;
+
+        s->chain_id += inc_chain;
+    }
+    return 0;
+}
+
 int ngli_transform_chains_update_chains(struct transform_chains *s, struct ngl_node *node)
 {
 
