@@ -117,7 +117,9 @@ enum gate_state {
 
 struct gate {
     enum gate_state state;
-    struct ngl_node *to;
+    struct darray children;
+    struct darray activity_nodes;
+    double visit_time;
 };
 
 struct ngl_node {
@@ -128,8 +130,6 @@ struct ngl_node {
 
     int state;
     int is_active;
-
-    struct darray gates; // struct gate
 
     double visit_time;
     double last_update_time;

@@ -202,6 +202,7 @@ lib_src = files(
   'rnode.c',
   'serialize.c',
   'texture.c',
+  'timeline.c',
   'transforms.c',
   'utils.c',
 )
