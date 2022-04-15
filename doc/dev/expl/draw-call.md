@@ -14,7 +14,7 @@ The `ngl_draw()` call is split in 4 passes:
 The first pass performed by `ngli_node_honor_release_prefetch()` is to visit
 the scene.
 
-By default, `ngli_node_visit()` will crawl every node parameter to find the
+By default, `node_visit()` will crawl every node parameter to find the
 child nodes. It is meant to flag every node as *active* or *inactive* for a
 given time. The final state of a node depends on the knowledge of the whole
 graph because of diamond shaped tree. A typical case is an active branch and an

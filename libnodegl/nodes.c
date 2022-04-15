@@ -624,7 +624,7 @@ void ngli_node_set_gate_state(struct ngl_node *node, int gate_id, enum gate_stat
     gates[gate_id].state = state;
 }
 
-int ngli_node_visit(struct ngl_node *node, int is_active, double t)
+static int node_visit(struct ngl_node *node, int is_active, double t)
 {
     /*
      * If a node is inactive and meant to be, there is no need
@@ -665,7 +665,7 @@ int ngli_node_visit(struct ngl_node *node, int is_active, double t)
         for (int i = 0; i < ngli_darray_count(gates_array); i++) {
             struct gate *gate = &gates[i];
             const int child_active = is_active && gate->state == NGLI_GATE_STATE_OPENED;
-            int ret = ngli_node_visit(gate->to, child_active, t);
+            int ret = node_visit(gate->to, child_active, t);
             if (ret < 0)
                 return ret;
         }
@@ -674,7 +674,7 @@ int ngli_node_visit(struct ngl_node *node, int is_active, double t)
         struct ngl_node **children = ngli_darray_data(children_array);
         for (int i = 0; i < ngli_darray_count(children_array); i++) {
             struct ngl_node *child = children[i];
-            int ret = ngli_node_visit(child, is_active, t);
+            int ret = node_visit(child, is_active, t);
             if (ret < 0)
                 return ret;
         }
@@ -717,7 +717,7 @@ int ngli_node_honor_release_prefetch(struct ngl_node *scene, double t)
     /* Build a new list of activity checks nodes */
     struct darray *nodes_array = &scene->ctx->activitycheck_nodes;
     ngli_darray_clear(nodes_array);
-    int ret = ngli_node_visit(scene, 1, t);
+    int ret = node_visit(scene, 1, t);
     if (ret < 0)
         return ret;
 
