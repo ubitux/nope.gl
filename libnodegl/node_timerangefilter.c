@@ -87,7 +87,7 @@ static int timerangefilter_init(struct ngl_node *node)
         return NGL_ERROR_INVALID_ARG;
     }
 
-    return 0;
+    return ngli_node_register_gate(node, o->child);
 }
 
 static int get_rr_id(const struct timerangefilter_opts *o, int start, double t)
@@ -133,18 +133,14 @@ static int update_rr_state(struct timerangefilter_priv *s, const struct timerang
     return rr_id;
 }
 
-static int timerangefilter_visit(struct ngl_node *node, int is_active, double t)
+static void timerangefilter_set_gates(struct ngl_node *node, double t)
 {
     struct timerangefilter_priv *s = node->priv_data;
     const struct timerangefilter_opts *o = node->opts;
     struct ngl_node *child = o->child;
 
-    /*
-     * The life of the parent takes over the life of its children: if the
-     * parent is dead, the children are likely dead as well. However, a living
-     * children from a dead parent can be revealed by another living branch.
-     */
-    if (is_active) {
+    int gate_state = NGLI_GATE_STATE_OPENED;
+
         const int rr_id = update_rr_state(s, o, t);
 
         if (rr_id >= 0) {
@@ -153,7 +149,7 @@ static int timerangefilter_visit(struct ngl_node *node, int is_active, double t)
             s->current_range = rr_id;
 
             if (rr->cls->id == NGL_NODE_TIMERANGEMODENOOP) {
-                is_active = 0;
+                gate_state = NGLI_GATE_STATE_CLOSED;
 
                 if (rr_id < o->nb_ranges - 1) {
                     // We assume here the next range requires the node started
@@ -167,7 +163,7 @@ static int timerangefilter_visit(struct ngl_node *node, int is_active, double t)
 
                         // The node will actually be needed soon, so we need to
                         // start it if necessary.
-                        is_active = 1;
+                        gate_state = NGLI_GATE_STATE_OPENED;
                     } else if (next_use_in <= o->max_idle_time && child->is_active) {
                         TRACE("%s not currently needed but will be soon %g (< %g), keep as active",
                               child->label, next_use_in, o->max_idle_time);
@@ -177,7 +173,7 @@ static int timerangefilter_visit(struct ngl_node *node, int is_active, double t)
                         // to start it, but in the case where it's actually
                         // already active it's not worth releasing it to start
                         // it again soon after, so we keep it active.
-                        is_active = 1;
+                        gate_state = NGLI_GATE_STATE_OPENED;
                     }
                 }
             } else if (rr->cls->id == NGL_NODE_TIMERANGEMODEONCE) {
@@ -190,9 +186,8 @@ static int timerangefilter_visit(struct ngl_node *node, int is_active, double t)
                 }
             }
         }
-    }
 
-    return ngli_node_visit(child, is_active, t);
+    ngli_node_set_gate_state(node, 0, gate_state);
 }
 
 static int timerangefilter_update(struct ngl_node *node, double t)
@@ -241,7 +236,7 @@ const struct node_class ngli_timerangefilter_class = {
     .id        = NGL_NODE_TIMERANGEFILTER,
     .name      = "TimeRangeFilter",
     .init      = timerangefilter_init,
-    .visit     = timerangefilter_visit,
+    .set_gates = timerangefilter_set_gates,
     .update    = timerangefilter_update,
     .draw      = timerangefilter_draw,
     .opts_size = sizeof(struct timerangefilter_opts),

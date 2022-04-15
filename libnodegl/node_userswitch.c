@@ -42,11 +42,17 @@ static const struct node_param userswitch_params[] = {
     {NULL}
 };
 
-static int userswitch_visit(struct ngl_node *node, int is_active, double t)
+static int userswitch_init(struct ngl_node *node)
+{
+    const struct userswitch_opts *o = node->opts;
+    return ngli_node_register_gate(node, o->child);
+}
+
+static void userswitch_set_gates(struct ngl_node *node, double t)
 {
     const struct userswitch_opts *o = node->opts;
     const int enabled = o->live.val.i[0];
-    return ngli_node_visit(o->child, is_active && enabled, t);
+    ngli_node_set_gate_state(node, 0, enabled ? NGLI_GATE_STATE_OPENED : NGLI_GATE_STATE_CLOSED);
 }
 
 static int userswitch_update(struct ngl_node *node, double t)
@@ -67,7 +73,8 @@ static void userswitch_draw(struct ngl_node *node)
 const struct node_class ngli_userswitch_class = {
     .id             = NGL_NODE_USERSWITCH,
     .name           = "UserSwitch",
-    .visit          = userswitch_visit,
+    .init           = userswitch_init,
+    .set_gates      = userswitch_set_gates,
     .update         = userswitch_update,
     .draw           = userswitch_draw,
     .opts_size      = sizeof(struct userswitch_opts),

@@ -181,6 +181,7 @@ static void node_uninit(struct ngl_node *node)
     ngli_assert(node->ctx);
     ngli_darray_reset(&node->children);
     ngli_darray_reset(&node->parents);
+    ngli_darray_reset(&node->gates);
     node_release(node);
 
     if (node->cls->uninit) {
@@ -288,6 +289,7 @@ static int node_init(struct ngl_node *node)
 
     ngli_darray_init(&node->children, sizeof(struct ngl_node *), 0);
     ngli_darray_init(&node->parents, sizeof(struct ngl_node *), 0);
+    ngli_darray_init(&node->gates, sizeof(struct gate), 0);
 
     ngli_assert(node->ctx);
     if (node->cls->init) {
@@ -607,6 +609,21 @@ int ngli_node_prepare(struct ngl_node *node)
     return 0;
 }
 
+int ngli_node_register_gate(struct ngl_node *from, struct ngl_node *to)
+{
+    const struct gate gate = {.state=NGLI_GATE_STATE_UNDEFINED, .to=to};
+    if (!ngli_darray_push(&from->gates, &gate))
+        return NGL_ERROR_MEMORY;
+    return 0;
+}
+
+void ngli_node_set_gate_state(struct ngl_node *node, int gate_id, enum gate_state state)
+{
+    struct gate *gates = ngli_darray_data(&node->gates);
+    ngli_assert(gate_id >= 0 && gate_id < ngli_darray_count(&node->gates));
+    gates[gate_id].state = state;
+}
+
 int ngli_node_visit(struct ngl_node *node, int is_active, double t)
 {
     /*
@@ -640,10 +657,18 @@ int ngli_node_visit(struct ngl_node *node, int is_active, double t)
         node->is_active |= is_active;
     }
 
-    if (node->cls->visit) {
-        int ret = node->cls->visit(node, is_active, t);
-        if (ret < 0)
-            return ret;
+    if (node->cls->set_gates) {
+        node->cls->set_gates(node, t);
+
+        struct darray *gates_array = &node->gates;
+        struct gate *gates = ngli_darray_data(gates_array);
+        for (int i = 0; i < ngli_darray_count(gates_array); i++) {
+            struct gate *gate = &gates[i];
+            const int child_active = is_active && gate->state == NGLI_GATE_STATE_OPENED;
+            int ret = ngli_node_visit(gate->to, child_active, t);
+            if (ret < 0)
+                return ret;
+        }
     } else {
         struct darray *children_array = &node->children;
         struct ngl_node **children = ngli_darray_data(children_array);

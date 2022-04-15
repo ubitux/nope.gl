@@ -64,6 +64,20 @@ static const struct node_param userselect_params[] = {
     {NULL}
 };
 
+static int userselect_init(struct ngl_node *node)
+{
+    const struct userselect_opts *o = node->opts;
+
+    for (int i = 0; i < o->nb_branches; i++) {
+        struct ngl_node *branch = o->branches[i];
+        int ret = ngli_node_register_gate(node, branch);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 /*
  * This is similar to what's being done in the Group node: even if they are
  * updated and drawn exclusively, each branch may still have its own specific
@@ -92,18 +106,12 @@ static int userselect_prepare(struct ngl_node *node)
     return ret;
 }
 
-static int userselect_visit(struct ngl_node *node, int is_active, double t)
+static void userselect_set_gates(struct ngl_node *node, double t)
 {
     const struct userselect_opts *o = node->opts;
-
     const int branch_id = o->live.val.i[0];
-    for (int i = 0; i < o->nb_branches; i++) {
-        struct ngl_node *branch = o->branches[i];
-        int ret = ngli_node_visit(branch, is_active && i == branch_id, t);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
+    for (int i = 0; i < o->nb_branches; i++)
+        ngli_node_set_gate_state(node, i, i == branch_id ? NGLI_GATE_STATE_OPENED : NGLI_GATE_STATE_CLOSED);
 }
 
 static int userselect_update(struct ngl_node *node, double t)
@@ -134,8 +142,9 @@ static void userselect_draw(struct ngl_node *node)
 const struct node_class ngli_userselect_class = {
     .id             = NGL_NODE_USERSELECT,
     .name           = "UserSelect",
+    .init           = userselect_init,
     .prepare        = userselect_prepare,
-    .visit          = userselect_visit,
+    .set_gates      = userselect_set_gates,
     .update         = userselect_update,
     .draw           = userselect_draw,
     .opts_size      = sizeof(struct userselect_opts),

@@ -109,6 +109,17 @@ struct ngl_ctx {
     int cmd_ret;
 };
 
+enum gate_state {
+    NGLI_GATE_STATE_UNDEFINED,
+    NGLI_GATE_STATE_OPENED,
+    NGLI_GATE_STATE_CLOSED,
+};
+
+struct gate {
+    enum gate_state state;
+    struct ngl_node *to;
+};
+
 struct ngl_node {
     const struct node_class *cls;
     struct ngl_ctx *ctx;
@@ -117,6 +128,8 @@ struct ngl_node {
 
     int state;
     int is_active;
+
+    struct darray gates; // struct gate
 
     double visit_time;
     double last_update_time;
@@ -490,17 +503,17 @@ struct node_class {
 
     /*
      * Allow a node to stop the descent into its children by optionally
-     * changing is_active and forwarding the call to the children.
+     * changing the gate states to its children nodes.
      *
-     * The callback MUST forward the call, even if the purpose is to disable
-     * the branch.
+     * The node needs to register the gates first using
+     * ngli_node_register_gate() in its init callback.
      *
-     * reentrant: yes (potentially with a different is_active flag)
+     * reentrant: yes
      * execution-order: root first
      * dispatch: delegated
      * when: first step during an api draw call
      */
-    int (*visit)(struct ngl_node *node, int is_active, double t);
+    void (*set_gates)(struct ngl_node *node, double t);
 
     /*
      * Pre-allocate resources or start background processing so that they are
@@ -594,6 +607,8 @@ struct node_class {
 void ngli_node_print_specs(void);
 
 int ngli_node_prepare(struct ngl_node *node);
+int ngli_node_register_gate(struct ngl_node *from, struct ngl_node *to);
+void ngli_node_set_gate_state(struct ngl_node *node, int gate_id, enum gate_state state);
 int ngli_node_visit(struct ngl_node *node, int is_active, double t);
 int ngli_node_honor_release_prefetch(struct ngl_node *scene, double t);
 int ngli_node_update(struct ngl_node *node, double t);
