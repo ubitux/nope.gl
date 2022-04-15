@@ -141,51 +141,50 @@ static void timerangefilter_set_gates(struct ngl_node *node, double t)
 
     int gate_state = NGLI_GATE_STATE_OPENED;
 
-        const int rr_id = update_rr_state(s, o, t);
+    const int rr_id = update_rr_state(s, o, t);
+    if (rr_id >= 0) {
+        struct ngl_node *rr = o->ranges[rr_id];
 
-        if (rr_id >= 0) {
-            struct ngl_node *rr = o->ranges[rr_id];
+        s->current_range = rr_id;
 
-            s->current_range = rr_id;
+        if (rr->cls->id == NGL_NODE_TIMERANGEMODENOOP) {
+            gate_state = NGLI_GATE_STATE_CLOSED;
 
-            if (rr->cls->id == NGL_NODE_TIMERANGEMODENOOP) {
-                gate_state = NGLI_GATE_STATE_CLOSED;
+            if (rr_id < o->nb_ranges - 1) {
+                // We assume here the next range requires the node started
+                // as the current one doesn't.
+                const struct timerangemode_opts *next = o->ranges[rr_id + 1]->opts;
+                const double next_use_in = next->start_time - t;
 
-                if (rr_id < o->nb_ranges - 1) {
-                    // We assume here the next range requires the node started
-                    // as the current one doesn't.
-                    const struct timerangemode_opts *next = o->ranges[rr_id + 1]->opts;
-                    const double next_use_in = next->start_time - t;
+                if (next_use_in <= o->prefetch_time) {
+                    TRACE("next use of %s in %g (< %g), mark as active",
+                          child->label, next_use_in, o->prefetch_time);
 
-                    if (next_use_in <= o->prefetch_time) {
-                        TRACE("next use of %s in %g (< %g), mark as active",
-                              child->label, next_use_in, o->prefetch_time);
+                    // The node will actually be needed soon, so we need to
+                    // start it if necessary.
+                    gate_state = NGLI_GATE_STATE_OPENED;
+                } else if (next_use_in <= o->max_idle_time && child->is_active) {
+                    TRACE("%s not currently needed but will be soon %g (< %g), keep as active",
+                          child->label, next_use_in, o->max_idle_time);
 
-                        // The node will actually be needed soon, so we need to
-                        // start it if necessary.
-                        gate_state = NGLI_GATE_STATE_OPENED;
-                    } else if (next_use_in <= o->max_idle_time && child->is_active) {
-                        TRACE("%s not currently needed but will be soon %g (< %g), keep as active",
-                              child->label, next_use_in, o->max_idle_time);
-
-                        // The node will be needed in a slight amount of time;
-                        // a bit longer than a prefetch period so we don't need
-                        // to start it, but in the case where it's actually
-                        // already active it's not worth releasing it to start
-                        // it again soon after, so we keep it active.
-                        gate_state = NGLI_GATE_STATE_OPENED;
-                    }
-                }
-            } else if (rr->cls->id == NGL_NODE_TIMERANGEMODEONCE) {
-                // If the child of the current once range is inactive, meaning
-                // it has been previously released, we need to force an update
-                // otherwise the child will stay uninitialized.
-                if (!child->is_active) {
-                    struct timerangemode_priv *rro = rr->priv_data;
-                    rro->updated = 0;
+                    // The node will be needed in a slight amount of time;
+                    // a bit longer than a prefetch period so we don't need
+                    // to start it, but in the case where it's actually
+                    // already active it's not worth releasing it to start
+                    // it again soon after, so we keep it active.
+                    gate_state = NGLI_GATE_STATE_OPENED;
                 }
             }
+        } else if (rr->cls->id == NGL_NODE_TIMERANGEMODEONCE) {
+            // If the child of the current once range is inactive, meaning
+            // it has been previously released, we need to force an update
+            // otherwise the child will stay uninitialized.
+            if (!child->is_active) {
+                struct timerangemode_priv *rro = rr->priv_data;
+                rro->updated = 0;
+            }
         }
+    }
 
     ngli_node_set_gate_state(node, 0, gate_state);
 }
