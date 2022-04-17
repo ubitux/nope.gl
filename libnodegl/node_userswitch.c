@@ -32,7 +32,7 @@ struct userswitch_opts {
 #define OFFSET(x) offsetof(struct userswitch_opts, x)
 static const struct node_param userswitch_params[] = {
     {"child",  NGLI_PARAM_TYPE_NODE, OFFSET(child),
-               .flags=NGLI_PARAM_FLAG_NON_NULL,
+               .flags=NGLI_PARAM_FLAG_NON_NULL | NGLI_PARAM_FLAG_GATE,
                .desc=NGLI_DOCSTRING("scene to be rendered or not")},
     {"enabled", NGLI_PARAM_TYPE_BOOL, OFFSET(live.val.i), {.i32=1},
                .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE,
@@ -42,17 +42,12 @@ static const struct node_param userswitch_params[] = {
     {NULL}
 };
 
-static int userswitch_init(struct ngl_node *node)
-{
-    const struct userswitch_opts *o = node->opts;
-    return ngli_node_register_gate(node, o->child);
-}
-
-static void userswitch_set_gates(struct ngl_node *node, double t)
+static int userswitch_set_gates(struct ngl_node *node, struct gate *gates, double t)
 {
     const struct userswitch_opts *o = node->opts;
     const int enabled = o->live.val.i[0];
-    ngli_node_set_gate_state(node, 0, enabled ? NGLI_GATE_STATE_OPENED : NGLI_GATE_STATE_CLOSED);
+    gates[0].state = enabled ? NGLI_GATE_STATE_OPENED : NGLI_GATE_STATE_CLOSED;
+    return 1;
 }
 
 static int userswitch_update(struct ngl_node *node, double t)
@@ -73,7 +68,6 @@ static void userswitch_draw(struct ngl_node *node)
 const struct node_class ngli_userswitch_class = {
     .id             = NGL_NODE_USERSWITCH,
     .name           = "UserSwitch",
-    .init           = userswitch_init,
     .set_gates      = userswitch_set_gates,
     .update         = userswitch_update,
     .draw           = userswitch_draw,

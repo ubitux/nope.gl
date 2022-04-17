@@ -258,6 +258,43 @@ static int track_children(struct ngl_node *node)
     return 0;
 }
 
+static void init_gate(struct gate *gate, struct ngl_node *node)
+{
+    new_gate->node = node;
+    ngli_darray_init(&new_gate->children, sizeof(struct gate), 0);
+    ngli_darray_init(&new_gate->activity_nodes, sizeof(struct ngl_node *), 0);
+    new_gate->visit_time = -1.;
+}
+
+static int build_gate_tree(struct timeline *s, struct gate *gate, struct ngl_node *node)
+{
+    if (node->cls->set_gates) {
+        struct gate *new_gate = ngli_darray_push(&gate->children);
+        if (!new_gate)
+            return NGL_ERROR_MEMORY;
+        init_gate(new_gate, node);
+
+        const struct darray *children_array = &node->children;
+        const struct ngl_node **children = ngli_darray_data(children_array);
+        for (int i = 0; i < ngli_darray_count(children_array); i++) {
+            const struct ngl_node *child = children[i];
+            int ret = build_gate_tree(s, new_gate, child);
+            if (ret < 0)
+                return ret;
+        }
+    } else if (node->cls->prefetch || node->cls->release) {
+        if (!ngli_darray_push(&gate->activity_nodes, &node))
+            return NGL_ERROR_MEMORY;
+    }
+
+    return 0;
+}
+
+static int init_gates(struct ngl_node *node)
+{
+
+}
+
 static int check_params_sanity(struct ngl_node *node)
 {
     const uint8_t *base_ptr = node->opts;
@@ -304,6 +341,13 @@ static int node_init(struct ngl_node *node)
     }
 
     ret = track_children(node);
+    if (ret < 0) {
+        node->state = STATE_INIT_FAILED;
+        node_uninit(node);
+        return ret;
+    }
+
+    ret = init_gates(node);
     if (ret < 0) {
         node->state = STATE_INIT_FAILED;
         node_uninit(node);
@@ -619,6 +663,7 @@ int ngli_node_register_gate(struct ngl_node *from, struct ngl_node *to)
 
 void ngli_node_set_gate_state(struct ngl_node *node, int gate_id, enum gate_state state)
 {
+    //node->ctx->cur_gate->state = state;
     struct gate *gates = ngli_darray_data(&node->gates);
     ngli_assert(gate_id >= 0 && gate_id < ngli_darray_count(&node->gates));
     gates[gate_id].state = state;

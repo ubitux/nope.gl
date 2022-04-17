@@ -50,6 +50,7 @@ static int branch_update_func(struct ngl_node *node)
 #define OFFSET(x) offsetof(struct userselect_opts, x)
 static const struct node_param userselect_params[] = {
     {"branches", NGLI_PARAM_TYPE_NODELIST, OFFSET(branches),
+                 .flags=NGLI_PARAM_FLAG_GATE,
                  .desc=NGLI_DOCSTRING("a set of branches to pick from")},
     {"branch",   NGLI_PARAM_TYPE_I32, OFFSET(live.val.i), {.i32=0},
                  .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE,
@@ -63,20 +64,6 @@ static const struct node_param userselect_params[] = {
                  .desc=NGLI_DOCSTRING("maximum value allowed during live change (only_honored when live_id is set)")},
     {NULL}
 };
-
-static int userselect_init(struct ngl_node *node)
-{
-    const struct userselect_opts *o = node->opts;
-
-    for (int i = 0; i < o->nb_branches; i++) {
-        struct ngl_node *branch = o->branches[i];
-        int ret = ngli_node_register_gate(node, branch);
-        if (ret < 0)
-            return ret;
-    }
-
-    return 0;
-}
 
 /*
  * This is similar to what's being done in the Group node: even if they are
@@ -106,12 +93,12 @@ static int userselect_prepare(struct ngl_node *node)
     return ret;
 }
 
-static void userselect_set_gates(struct ngl_node *node, double t)
+static int userselect_set_gates(struct ngl_node *node, struct gate *gates, double t)
 {
     const struct userselect_opts *o = node->opts;
     const int branch_id = o->live.val.i[0];
     for (int i = 0; i < o->nb_branches; i++)
-        ngli_node_set_gate_state(node, i, i == branch_id ? NGLI_GATE_STATE_OPENED : NGLI_GATE_STATE_CLOSED);
+        gates[i].state = i == branch_id ? NGLI_GATE_STATE_OPENED : NGLI_GATE_STATE_CLOSED;
 }
 
 static int userselect_update(struct ngl_node *node, double t)
@@ -142,7 +129,6 @@ static void userselect_draw(struct ngl_node *node)
 const struct node_class ngli_userselect_class = {
     .id             = NGL_NODE_USERSELECT,
     .name           = "UserSelect",
-    .init           = userselect_init,
     .prepare        = userselect_prepare,
     .set_gates      = userselect_set_gates,
     .update         = userselect_update,

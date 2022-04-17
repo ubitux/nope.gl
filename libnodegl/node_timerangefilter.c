@@ -48,7 +48,8 @@ struct timerangefilter_priv {
 
 #define OFFSET(x) offsetof(struct timerangefilter_opts, x)
 static const struct node_param timerangefilter_params[] = {
-    {"child", NGLI_PARAM_TYPE_NODE, OFFSET(child), .flags=NGLI_PARAM_FLAG_NON_NULL,
+    {"child", NGLI_PARAM_TYPE_NODE, OFFSET(child),
+              .flags=NGLI_PARAM_FLAG_NON_NULL | NGLI_PARAM_FLAG_GATE,
               .desc=NGLI_DOCSTRING("time filtered scene")},
     {"ranges", NGLI_PARAM_TYPE_NODELIST, OFFSET(ranges),
                .node_types=RANGES_TYPES_LIST,
@@ -87,7 +88,7 @@ static int timerangefilter_init(struct ngl_node *node)
         return NGL_ERROR_INVALID_ARG;
     }
 
-    return ngli_node_register_gate(node, o->child);
+    return 0;
 }
 
 static int get_rr_id(const struct timerangefilter_opts *o, int start, double t)
@@ -133,7 +134,7 @@ static int update_rr_state(struct timerangefilter_priv *s, const struct timerang
     return rr_id;
 }
 
-static void timerangefilter_set_gates(struct ngl_node *node, double t)
+static int timerangefilter_set_gates(struct ngl_node *node, struct gate *gates, double t)
 {
     struct timerangefilter_priv *s = node->priv_data;
     const struct timerangefilter_opts *o = node->opts;
@@ -186,7 +187,8 @@ static void timerangefilter_set_gates(struct ngl_node *node, double t)
         }
     }
 
-    ngli_node_set_gate_state(node, 0, gate_state);
+    gates[0].states = gate_state;
+    return 1;
 }
 
 static int timerangefilter_update(struct ngl_node *node, double t)

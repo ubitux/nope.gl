@@ -513,7 +513,7 @@ struct node_class {
      * dispatch: delegated
      * when: first step during an api draw call
      */
-    void (*set_gates)(struct ngl_node *node, double t);
+    int (*set_gates)(struct ngl_node *node, struct gate *gates, double t);
 
     /*
      * Pre-allocate resources or start background processing so that they are
@@ -608,7 +608,6 @@ void ngli_node_print_specs(void);
 
 int ngli_node_prepare(struct ngl_node *node);
 int ngli_node_register_gate(struct ngl_node *from, struct ngl_node *to);
-void ngli_node_set_gate_state(struct ngl_node *node, int gate_id, enum gate_state state);
 int ngli_node_honor_release_prefetch(struct ngl_node *scene, double t);
 int ngli_node_update(struct ngl_node *node, double t);
 int ngli_node_update_children(struct ngl_node *node, double t);

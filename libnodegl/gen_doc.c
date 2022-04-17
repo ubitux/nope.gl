@@ -238,6 +238,20 @@ static int check_node_params(const struct node_class *cls)
             return NGL_ERROR_BUG;
         }
 
+        if (par->flags & NGLI_PARAM_FLAG_GATE) {
+            if (!node_based_parameter(par)) {
+                fprintf(stderr, "%s.%s is not a node based parameter, "
+                        "so it can not be flagged as a gate", cls->name, par->key);
+                return NGL_ERROR_BUG;
+            }
+
+            if (!cls->set_gates) {
+                fprintf(stderr, "%s.%s is flagged as gate, "
+                        "but the there is no set_gates() callback implemented", cls->name, par->key);
+                return NGL_ERROR_BUG;
+            }
+        }
+
         par++;
     }
 

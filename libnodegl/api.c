@@ -33,6 +33,7 @@
 #endif
 
 #include "darray.h"
+#include "gates_tree.h"
 #include "gpu_ctx.h"
 #include "graphicstate.h"
 #include "log.h"
@@ -104,6 +105,21 @@ static void scene_reset(struct ngl_ctx *s, int action)
             ngl_node_unrefp(&s->scene);
     }
     ngli_rnode_reset(&s->rnode);
+    ngli_gates_tree_reset(&s->gates_tree);
+}
+
+static int scene_init(struct ngl_ctx *s)
+{
+    ngli_rnode_init(&s->rnode);
+    s->rnode_pos = &s->rnode;
+    s->rnode_pos->graphicstate = NGLI_GRAPHICSTATE_DEFAULTS;
+    s->rnode_pos->rendertarget_desc = *ngli_gpu_ctx_get_default_rendertarget_desc(s->gpu_ctx);
+
+    ngli_gates_tree_init(&s->gates_tree);
+
+    ret = ngli_pgcache_init(&s->pgcache, s->gpu_ctx);
+    if (ret < 0)
+        goto fail;
 }
 
 static int cmd_reset(struct ngl_ctx *s, void *arg)
@@ -161,6 +177,8 @@ static int cmd_configure(struct ngl_ctx *s, void *arg)
     s->rnode_pos = &s->rnode;
     s->rnode_pos->graphicstate = NGLI_GRAPHICSTATE_DEFAULTS;
     s->rnode_pos->rendertarget_desc = *ngli_gpu_ctx_get_default_rendertarget_desc(s->gpu_ctx);
+
+    ngli_gates_tree_init(&s->gates_tree);
 
     ret = ngli_pgcache_init(&s->pgcache, s->gpu_ctx);
     if (ret < 0)
@@ -250,6 +268,8 @@ static int cmd_set_scene(struct ngl_ctx *s, void *arg)
     s->rnode_pos = &s->rnode;
     s->rnode_pos->graphicstate = NGLI_GRAPHICSTATE_DEFAULTS;
     s->rnode_pos->rendertarget_desc = *ngli_gpu_ctx_get_default_rendertarget_desc(s->gpu_ctx);
+
+    ngli_gates_tree_init(&s->gates_tree);
 
     struct ngl_node *scene = arg;
     if (scene) {

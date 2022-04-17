@@ -135,6 +135,13 @@ struct ngl_node;
  */
 #define NGLI_PARAM_FLAG_ALLOW_NODE (1<<4)
 
+/*
+ * Imply that the descent into the parameter is controlled dynamically.
+ *
+ * Only applicable for node-based parameters.
+ */
+#define NGLI_PARAM_FLAG_GATE (1<<5)
+
 struct node_param {
     const char *key;
     int type;
