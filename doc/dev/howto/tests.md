@@ -91,6 +91,8 @@ also available for a report meant to be parsed by other tools.
 
 ## Memory leaks
 
+### Valgrind
+
 For the native tests, meson test wrapper can be used in combination with
 [Valgrind](https://www.valgrind.org/). After activating the `venv`, they can be
 executed with Valgrind using: `meson test -C builddir/libnodegl --wrap
@@ -102,6 +104,27 @@ to their internal allocator, but then drivers issues would need to be silenced
 manually as well. This is still a work in progress.
 
 Beware that Valgrind only covers heap allocation, nothing GPU related.
+
+### Sanitizers
+
+An alternative to valgrind is to rely on the compiler sanitizers. In order to
+use them, a `--sanitizer` argument can be specified to the `configure.py`, with
+the desired sanitizer name as argument. For instance, `./configure --sanitizer
+address`.
+
+With the leak sanitizer enabled, it is recommended to use
+`ASAN_OPTIONS=fast_unwind_on_malloc=0
+LSAN_OPTIONS=suppressions=$(pwd)/scripts/lsan-suppr.txt` when running the
+tests.
+
+FIXME `make tests` still complains due to Python garbage; "ASan runtime does
+not come first in initial library list":
+- we need `LD_PRELOAD=/usr/lib/libasan.so` to workaround this
+- we also need `PYTHONMALLOC=malloc` helps but is not enough; some py error
+  still show up and silencing all python actually silence the underlying
+  libnodegl calls
+
+### GPU memory leaks
 
 To detect GPU memory leaks, one can use the `scripts/gl-leaks.sh` helper, which
 is relying on [apitrace](https://apitrace.github.io/) as a meson wrap file:

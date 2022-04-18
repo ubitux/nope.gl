@@ -1,0 +1,5 @@
+leak:ld-linux*.so
+leak:libGLdispatch.so
+leak:libLLVM*.so
+leak:libSPIRV.so
+leak:libglslang.so

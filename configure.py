@@ -444,7 +444,7 @@ def _cmd_join(*cmds):
 
 
 def _get_make_vars(cfg):
-    debug = cfg.args.coverage or cfg.args.buildtype == "debug"
+    debug = cfg.args.coverage or cfg.args.sanitizer or cfg.args.buildtype == "debug"
 
     # We don't want Python to fallback on one found in the PATH so we explicit
     # it to the one in the venv.
@@ -485,6 +485,9 @@ def _get_make_vars(cfg):
         PIP=_cmd_join(python, "-m", "pip"),
         MESON=meson,
     )
+
+    if cfg.args.sanitizer:
+        meson_setup += [f"-Db_sanitize={cfg.args.sanitizer}"]
 
     ret["MESON_SETUP"] = "$(MESON) " + _cmd_join(*meson_setup, f"--backend={cfg.args.build_backend}")
     # Our tests/meson.build logic is not well supported with the VS backend so
@@ -607,6 +610,7 @@ def _run():
     parser.add_argument("-p", "--venv-path", default=op.join(_ROOTDIR, "venv"), help="Virtual environment directory")
     parser.add_argument("--buildtype", choices=("release", "debug"), default="release", help="Build type")
     parser.add_argument("--coverage", action="store_true", help="Code coverage")
+    parser.add_argument("--sanitizer", help="sanitizer (address, undefined, thread, ...)")
     parser.add_argument(
         "-d",
         "--debug-opts",
