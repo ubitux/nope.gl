@@ -1,0 +1,24 @@
+{
+   <libva0>
+   Memcheck:Cond
+   obj:/usr/lib/libva.so*
+   fun:vaInitialize
+}
+{
+   <libva1>
+   Memcheck:Leak
+   obj:/usr/lib/libva.so*
+   fun:vaInitialize
+}
+{
+   <libva2>
+   Memcheck:Addr8
+   obj:/usr/lib/libva.so*
+   fun:vaInitialize
+}
+{
+   <libva3>
+   Memcheck:Value8
+   obj:/usr/lib/libva.so*
+   fun:vaInitialize
+}

@@ -22,6 +22,8 @@
 import difflib
 import os
 import os.path as op
+import subprocess
+import tempfile
 
 from pynodegl_utils.misc import get_backend, get_nodegl_tempdir
 
@@ -128,6 +130,21 @@ class CompareSceneBase(CompareBase):
         if self._exercise_serialization:
             scene_str = scene.serialize()
             assert ctx.set_scene_from_string(scene_str) == 0
+
+            valgrind = os.environ.get("VALGRIND")
+            if valgrind:
+                with tempfile.NamedTemporaryFile() as fp:
+                    fp.write(scene_str)
+                    fp.flush()
+                    cmd = [
+                        # fmt: off
+                        valgrind, "--error-exitcode=1",
+                        #"--gen-suppressions=all", "--log-file=/tmp/nique.log",
+                        #"--suppressions=/mnt/work/src/node.gl/scripts/valgrind.suppr",
+                        "ngl-render", "-o", "/dev/null", "-t", f"0:{duration}:{max(int(1/timescale),1)}", "-s", f"{width}x{height}", "-i", fp.name,
+                        # fmt: on
+                    ]
+                    assert subprocess.call(cmd) == 0
         else:
             assert ctx.set_scene(scene) == 0
 
