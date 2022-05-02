@@ -55,7 +55,11 @@ def _get_static_color_scene_func(c, space):
 color_anim_srgb = _get_anim_color_scene_func((1.0, 0.5, 0.0), (0.0, 0.6, 1.0), "srgb")
 color_anim_hsl = _get_anim_color_scene_func((0.6, 0.9, 0.4), (0.1, 0.5, 0.6), "hsl")
 color_anim_hsv = _get_anim_color_scene_func((0.3, 0.7, 0.6), (1.0, 1.0, 0.7), "hsv")
+color_anim_oklab = _get_anim_color_scene_func((0.4, 0.5, 0.7), (0.8, 0.2, 0.6), "oklab")
+color_anim_oklch = _get_anim_color_scene_func((0.6, 0.1, 0.4), (0.3, 0.2, 0.9), "oklch")
 
 color_static_srgb = _get_static_color_scene_func((1.0, 0.5, 0.0), "srgb")
 color_static_hsl = _get_static_color_scene_func((0.6, 0.9, 0.4), "hsl")
 color_static_hsv = _get_static_color_scene_func((0.3, 0.7, 0.6), "hsv")
+color_static_oklab = _get_static_color_scene_func((0.4, 0.5, 0.7), "oklab")
+color_static_oklch = _get_static_color_scene_func((0.6, 0.1, 0.4), "oklch")

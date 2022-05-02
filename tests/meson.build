@@ -87,9 +87,13 @@ foreach backend : backends
     'anim_srgb',
     'anim_hsl',
     'anim_hsv',
+    'anim_oklab',
+    'anim_oklch',
     'static_srgb',
     'static_hsl',
     'static_hsv',
+    'static_oklab',
+    'static_oklch',
   ]
 
   tests_compositing = [

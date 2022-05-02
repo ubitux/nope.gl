@@ -175,6 +175,8 @@ static void mix_##space(void *user_arg, void *dst,              \
 DECLARE_COLOR_MIX_FUNCS(srgb)
 DECLARE_COLOR_MIX_FUNCS(hsl)
 DECLARE_COLOR_MIX_FUNCS(hsv)
+DECLARE_COLOR_MIX_FUNCS(oklab)
+DECLARE_COLOR_MIX_FUNCS(oklch)
 
 #define DECLARE_COLOR_CPY_FUNCS(space)                          \
 static void cpy_##space(void *user_arg, void *dst,              \
@@ -185,6 +187,8 @@ static void cpy_##space(void *user_arg, void *dst,              \
 
 DECLARE_COLOR_CPY_FUNCS(hsl)
 DECLARE_COLOR_CPY_FUNCS(hsv)
+DECLARE_COLOR_CPY_FUNCS(oklab)
+DECLARE_COLOR_CPY_FUNCS(oklch)
 
 #define DECLARE_VEC_MIX_AND_CPY_FUNCS(len)                      \
 static void mix_vec##len(void *user_arg, void *dst,             \
@@ -231,6 +235,8 @@ static ngli_animation_mix_func_type get_color_mix_func(int space)
     case NGLI_COLORCONV_SPACE_SRGB:  return mix_srgb;
     case NGLI_COLORCONV_SPACE_HSL:   return mix_hsl;
     case NGLI_COLORCONV_SPACE_HSV:   return mix_hsv;
+    case NGLI_COLORCONV_SPACE_OKLAB: return mix_oklab;
+    case NGLI_COLORCONV_SPACE_OKLCH: return mix_oklch;
     }
     return NULL;
 }
@@ -241,6 +247,8 @@ static ngli_animation_cpy_func_type get_color_cpy_func(int space)
     case NGLI_COLORCONV_SPACE_SRGB:  return cpy_vec3;
     case NGLI_COLORCONV_SPACE_HSL:   return cpy_hsl;
     case NGLI_COLORCONV_SPACE_HSV:   return cpy_hsv;
+    case NGLI_COLORCONV_SPACE_OKLAB: return cpy_oklab;
+    case NGLI_COLORCONV_SPACE_OKLCH: return cpy_oklch;
     }
     return NULL;
 }

@@ -1679,6 +1679,8 @@ Constant | Description
 `srgb` | sRGB (standard RGB)
 `hsl` | Hue/Saturation/Lightness (polar form of sRGB)
 `hsv` | Hue/Saturation/Value (polar form of sRGB)
+`oklab` | OkLab from Björn Ottosson (2020-2021)
+`oklch` | OkLCh from Björn Ottosson (2020-2021)
 
 ## easing choices
 

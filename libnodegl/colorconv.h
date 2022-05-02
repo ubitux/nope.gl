@@ -28,6 +28,8 @@
 #define NGLI_COLORCONV_SPACE_SRGB   0
 #define NGLI_COLORCONV_SPACE_HSL    1
 #define NGLI_COLORCONV_SPACE_HSV    2
+#define NGLI_COLORCONV_SPACE_OKLAB  3
+#define NGLI_COLORCONV_SPACE_OKLCH  4
 
 extern const struct param_choices ngli_colorconv_colorspace_choices;
 
@@ -36,9 +38,13 @@ int ngli_colorconv_get_ycbcr_to_rgb_color_matrix(float *dst, const struct color_
 void ngli_colorconv_srgb2linear(float *dst, const float *srgb);
 void ngli_colorconv_hsl2linear(float *dst, const float *hsl);
 void ngli_colorconv_hsv2linear(float *dst, const float *hsv);
+void ngli_colorconv_oklab2linear(float *dst, const float *lab);
+void ngli_colorconv_oklch2linear(float *dst, const float *lch);
 
 void ngli_colorconv_hsl2srgb(float *dst, const float *hsl);
 void ngli_colorconv_hsv2srgb(float *dst, const float *hsv);
+void ngli_colorconv_oklab2srgb(float *dst, const float *lab);
+void ngli_colorconv_oklch2srgb(float *dst, const float *lch);
 
 void ngli_colorconv_linear2srgb(float *dst, const float *rgb);
 

@@ -160,6 +160,8 @@ const struct param_choices ngli_colorconv_colorspace_choices = {
         {"srgb",  NGLI_COLORCONV_SPACE_SRGB,  .desc=NGLI_DOCSTRING("sRGB (standard RGB)")},
         {"hsl",   NGLI_COLORCONV_SPACE_HSL,   .desc=NGLI_DOCSTRING("Hue/Saturation/Lightness (polar form of sRGB)")},
         {"hsv",   NGLI_COLORCONV_SPACE_HSV,   .desc=NGLI_DOCSTRING("Hue/Saturation/Value (polar form of sRGB)")},
+        {"oklab", NGLI_COLORCONV_SPACE_OKLAB, .desc=NGLI_DOCSTRING("OkLab from Björn Ottosson (2020-2021)")},
+        {"oklch", NGLI_COLORCONV_SPACE_OKLCH, .desc=NGLI_DOCSTRING("OkLCh from Björn Ottosson (2020-2021)")},
         {NULL}
     }
 };
@@ -229,4 +231,47 @@ void ngli_colorconv_hsv2linear(float *dst, const float *hsv)
     float srgb[3];
     ngli_colorconv_hsv2srgb(srgb, hsv);
     ngli_colorconv_srgb2linear(dst, srgb);
+}
+
+/*
+ * OkLab to linear (s)RGB
+ *
+ * See https://bottosson.github.io/posts/oklab/ for more information.
+ */
+void ngli_colorconv_oklab2linear(float *dst, const float *lab)
+{
+    const float L = lab[0], a = lab[1], b = lab[2];
+    const float l = L + 0.3963377774f * a + 0.2158037573f * b;
+    const float m = L - 0.1055613458f * a - 0.0638541728f * b;
+    const float s = L - 0.0894841775f * a - 1.2914855480f * b;
+    const float l3 = l * l * l;
+    const float m3 = m * m * m;
+    const float s3 = s * s * s;
+    dst[0] =  4.0767416621f * l3 - 3.3077115913f * m3 + 0.2309699292f * s3;
+    dst[1] = -1.2684380046f * l3 + 2.6097574011f * m3 - 0.3413193965f * s3;
+    dst[2] = -0.0041960863f * l3 - 0.7034186147f * m3 + 1.7076147010f * s3;
+}
+
+void ngli_colorconv_oklab2srgb(float *dst, const float *lab)
+{
+    float rgb[3];
+    ngli_colorconv_oklch2linear(rgb, lab);
+    ngli_colorconv_linear2srgb(dst, rgb);
+}
+
+/*
+ * OkLCh (polar form of OkLab) to linear (s)RGB
+ */
+void ngli_colorconv_oklch2linear(float *dst, const float *lch)
+{
+    const float L = lch[0], C = lch[1], h = lch[2];
+    const float lab[3] = {L, C * cosf(h), C * sinf(h)};
+    ngli_colorconv_oklab2linear(dst, lab);
+}
+
+void ngli_colorconv_oklch2srgb(float *dst, const float *lch)
+{
+    float rgb[3];
+    ngli_colorconv_oklch2linear(rgb, lch);
+    ngli_colorconv_linear2srgb(dst, rgb);
 }

@@ -137,6 +137,8 @@ static int uniformcolor_update_func(struct ngl_node *node)
     case NGLI_COLORCONV_SPACE_SRGB:  memcpy(s->var.data, o->live.val.f, s->var.data_size);  break;
     case NGLI_COLORCONV_SPACE_HSL:   ngli_colorconv_hsl2srgb(s->var.data, o->live.val.f);   break;
     case NGLI_COLORCONV_SPACE_HSV:   ngli_colorconv_hsv2srgb(s->var.data, o->live.val.f);   break;
+    case NGLI_COLORCONV_SPACE_OKLAB: ngli_colorconv_oklab2srgb(s->var.data, o->live.val.f); break;
+    case NGLI_COLORCONV_SPACE_OKLCH: ngli_colorconv_oklch2srgb(s->var.data, o->live.val.f); break;
     default:
         ngli_assert(0);
     }
