@@ -383,8 +383,7 @@
   "ResourceProps": [
     ["precision", "select", ""],
     ["as_image", "bool", ""],
-    ["writable", "bool", ""],
-    ["variadic", "bool", ""]
+    ["writable", "bool", ""]
   ],
   "Rotate": [
     ["child", "node", "M"],
