@@ -369,6 +369,13 @@
     ["geometry", "node", ""],
     ["filters", "node_list", ""]
   ],
+  "RenderHistogram": [
+    ["stats", "node", "M"],
+    ["mode", "select", ""],
+    ["blending", "select", ""],
+    ["geometry", "node", ""],
+    ["filters", "node_list", ""]
+  ],
   "RenderTexture": [
     ["texture", "node", "M"],
     ["blending", "select", ""],

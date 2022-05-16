@@ -126,6 +126,7 @@
     action(NGL_NODE_RENDERCOLOR,            ngli_rendercolor_class)             \
     action(NGL_NODE_RENDERGRADIENT,         ngli_rendergradient_class)          \
     action(NGL_NODE_RENDERGRADIENT4,        ngli_rendergradient4_class)         \
+    action(NGL_NODE_RENDERHISTOGRAM,        ngli_renderhistogram_class)         \
     action(NGL_NODE_RENDERTEXTURE,          ngli_rendertexture_class)           \
     action(NGL_NODE_RENDERTOTEXTURE,        ngli_rtt_class)                     \
     action(NGL_NODE_RESOURCEPROPS,          ngli_resourceprops_class)           \
