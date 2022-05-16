@@ -229,6 +229,7 @@ static const struct drawcall_spec {
             NGL_NODE_RENDERGRADIENT4,
             NGL_NODE_RENDERHISTOGRAM,
             NGL_NODE_RENDERTEXTURE,
+            NGL_NODE_RENDERWAVEFORM,
             -1
         },
     },

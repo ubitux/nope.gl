@@ -390,6 +390,13 @@
     ["clear_color", "vec4", ""],
     ["features", "flags", ""]
   ],
+  "RenderWaveform": [
+    ["stats", "node", "M"],
+    ["mode", "select", ""],
+    ["blending", "select", ""],
+    ["geometry", "node", ""],
+    ["filters", "node_list", ""]
+  ],
   "ResourceProps": [
     ["precision", "select", ""],
     ["as_image", "bool", ""],
