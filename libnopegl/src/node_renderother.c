@@ -102,6 +102,7 @@ struct render_common {
     int topology;
     const struct geometry *geometry;
     struct darray pipeline_descs;
+    struct ngl_node *extra_draw_node;
 };
 
 struct rendercolor_opts {
@@ -781,6 +782,9 @@ static int rendertexture_prepare(struct ngl_node *node)
 
 static void renderother_draw(struct ngl_node *node, struct render_common *s, const struct render_common_opts *o)
 {
+    if (s->extra_draw_node)
+        ngli_node_draw(s->extra_draw_node);
+
     struct ngl_ctx *ctx = node->ctx;
     struct pipeline_desc *descs = ngli_darray_data(&s->pipeline_descs);
     struct pipeline_desc *desc = &descs[ctx->rnode_pos->id];
