@@ -221,26 +221,22 @@ def _anim_func(size, animated_type, kf_func, velocity_type=None):
 
 
 _float_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameFloat(t, v[0], **kw)
-_vec2_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameVec2(t, v, **kw)
-_vec3_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameVec3(t, v, **kw)
-_vec4_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameVec4(t, v, **kw)
-_quat_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameQuat(t, v, **kw)
 
 anim_forward_float = test_floats()(partial(_anim_func, 1, ngl.AnimatedFloat, _float_kf_func))
-anim_forward_vec2 = test_floats()(partial(_anim_func, 2, ngl.AnimatedVec2, _vec2_kf_func))
-anim_forward_vec3 = test_floats()(partial(_anim_func, 3, ngl.AnimatedVec3, _vec3_kf_func))
-anim_forward_vec4 = test_floats()(partial(_anim_func, 4, ngl.AnimatedVec4, _vec4_kf_func))
-anim_forward_quat = test_floats()(partial(_anim_func, 4, ngl.AnimatedQuat, _quat_kf_func))
+anim_forward_vec2 = test_floats()(partial(_anim_func, 2, ngl.AnimatedVec2, ngl.AnimKeyFrameVec2))
+anim_forward_vec3 = test_floats()(partial(_anim_func, 3, ngl.AnimatedVec3, ngl.AnimKeyFrameVec3))
+anim_forward_vec4 = test_floats()(partial(_anim_func, 4, ngl.AnimatedVec4, ngl.AnimKeyFrameVec4))
+anim_forward_quat = test_floats()(partial(_anim_func, 4, ngl.AnimatedQuat, ngl.AnimKeyFrameQuat))
 
 anim_velocity_float = test_floats()(
     partial(_anim_func, 1, ngl.AnimatedFloat, _float_kf_func, velocity_type=ngl.VelocityFloat)
 )
 anim_velocity_vec2 = test_floats()(
-    partial(_anim_func, 2, ngl.AnimatedVec2, _vec2_kf_func, velocity_type=ngl.VelocityVec2)
+    partial(_anim_func, 2, ngl.AnimatedVec2, ngl.AnimKeyFrameVec2, velocity_type=ngl.VelocityVec2)
 )
 anim_velocity_vec3 = test_floats()(
-    partial(_anim_func, 3, ngl.AnimatedVec3, _vec3_kf_func, velocity_type=ngl.VelocityVec3)
+    partial(_anim_func, 3, ngl.AnimatedVec3, ngl.AnimKeyFrameVec3, velocity_type=ngl.VelocityVec3)
 )
 anim_velocity_vec4 = test_floats()(
-    partial(_anim_func, 4, ngl.AnimatedVec4, _vec4_kf_func, velocity_type=ngl.VelocityVec4)
+    partial(_anim_func, 4, ngl.AnimatedVec4, ngl.AnimKeyFrameVec4, velocity_type=ngl.VelocityVec4)
 )
