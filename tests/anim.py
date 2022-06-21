@@ -21,6 +21,7 @@
 
 import itertools
 import random
+from functools import partial
 
 from pynodegl_utils.tests.cmp_floats import test_floats
 
@@ -175,52 +176,48 @@ def anim_resolution_api(nb_points=7):
     return ret
 
 
-def _get_anim_func(size, animated_type, kf_func, velocity_type=None):
-    @test_floats()
-    def test_func():
-        offsets = ((None, None), (None, 0.7), (0.3, None), (0.3, 0.7))
-        nb_kf = len(_easing_specs) + 1
-        nb_queries = nb_kf - 1
-        scale = 1.0 / float(nb_kf)
-        rng = random.Random(0)
-        kfvalues = [[rng.uniform(0, 1) for _ in range(size)] for _ in range(nb_kf + 1)]
+def _anim_func(size, animated_type, kf_func, velocity_type=None):
+    offsets = ((None, None), (None, 0.7), (0.3, None), (0.3, 0.7))
+    nb_kf = len(_easing_specs) + 1
+    nb_queries = nb_kf - 1
+    scale = 1.0 / float(nb_kf)
+    rng = random.Random(0)
+    kfvalues = [[rng.uniform(0, 1) for _ in range(size)] for _ in range(nb_kf + 1)]
 
-        ret = []
-        for i, (easing_start_offset, easing_end_offset) in enumerate(offsets):
-            anim_kf = [kf_func(0, kfvalues[0])]
-            for j in range(nb_kf):
-                t = (j + 1) * scale
-                v = kfvalues[j + 1]
-                easing_name, easing_args = _easing_split(_easing_list[j])
-                anim_kf.append(
-                    kf_func(
-                        t,
-                        v,
-                        easing=easing_name,
-                        easing_args=easing_args,
-                        easing_start_offset=easing_start_offset,
-                        easing_end_offset=easing_end_offset,
-                    )
+    ret = []
+    for i, (easing_start_offset, easing_end_offset) in enumerate(offsets):
+        anim_kf = [kf_func(0, kfvalues[0])]
+        for j in range(nb_kf):
+            t = (j + 1) * scale
+            v = kfvalues[j + 1]
+            easing_name, easing_args = _easing_split(_easing_list[j])
+            anim_kf.append(
+                kf_func(
+                    t,
+                    v,
+                    easing=easing_name,
+                    easing_args=easing_args,
+                    easing_start_offset=easing_start_offset,
+                    easing_end_offset=easing_end_offset,
                 )
-            anim = animated_type(anim_kf)
-            if velocity_type is not None:
-                anim = velocity_type(anim)
+            )
+        anim = animated_type(anim_kf)
+        if velocity_type is not None:
+            anim = velocity_type(anim)
 
-            # Query between times
-            values = [anim.evaluate((t_id + 1) * scale) for t_id in range(nb_queries)]
+        # Query between times
+        values = [anim.evaluate((t_id + 1) * scale) for t_id in range(nb_queries)]
 
-            # Query boundaries and out of them (to trigger a copy instead of a mix)
-            values += [anim.evaluate(0)]
-            values += [anim.evaluate(1)]
-            values += [anim.evaluate(5)]
+        # Query boundaries and out of them (to trigger a copy instead of a mix)
+        values += [anim.evaluate(0)]
+        values += [anim.evaluate(1)]
+        values += [anim.evaluate(5)]
 
-            if hasattr(values[0], "__iter__"):
-                values = list(itertools.chain(*values))
-            ret.append(("off%d" % i, values))
+        if hasattr(values[0], "__iter__"):
+            values = list(itertools.chain(*values))
+        ret.append(("off%d" % i, values))
 
-        return ret
-
-    return test_func
+    return ret
 
 
 _float_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameFloat(t, v[0], **kw)
@@ -229,13 +226,21 @@ _vec3_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameVec3(t, v, **kw)
 _vec4_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameVec4(t, v, **kw)
 _quat_kf_func = lambda t, v, **kw: ngl.AnimKeyFrameQuat(t, v, **kw)
 
-anim_forward_float = _get_anim_func(1, ngl.AnimatedFloat, _float_kf_func)
-anim_forward_vec2 = _get_anim_func(2, ngl.AnimatedVec2, _vec2_kf_func)
-anim_forward_vec3 = _get_anim_func(3, ngl.AnimatedVec3, _vec3_kf_func)
-anim_forward_vec4 = _get_anim_func(4, ngl.AnimatedVec4, _vec4_kf_func)
-anim_forward_quat = _get_anim_func(4, ngl.AnimatedQuat, _quat_kf_func)
+anim_forward_float = test_floats()(partial(_anim_func, 1, ngl.AnimatedFloat, _float_kf_func))
+anim_forward_vec2 = test_floats()(partial(_anim_func, 2, ngl.AnimatedVec2, _vec2_kf_func))
+anim_forward_vec3 = test_floats()(partial(_anim_func, 3, ngl.AnimatedVec3, _vec3_kf_func))
+anim_forward_vec4 = test_floats()(partial(_anim_func, 4, ngl.AnimatedVec4, _vec4_kf_func))
+anim_forward_quat = test_floats()(partial(_anim_func, 4, ngl.AnimatedQuat, _quat_kf_func))
 
-anim_velocity_float = _get_anim_func(1, ngl.AnimatedFloat, _float_kf_func, velocity_type=ngl.VelocityFloat)
-anim_velocity_vec2 = _get_anim_func(2, ngl.AnimatedVec2, _vec2_kf_func, velocity_type=ngl.VelocityVec2)
-anim_velocity_vec3 = _get_anim_func(3, ngl.AnimatedVec3, _vec3_kf_func, velocity_type=ngl.VelocityVec3)
-anim_velocity_vec4 = _get_anim_func(4, ngl.AnimatedVec4, _vec4_kf_func, velocity_type=ngl.VelocityVec4)
+anim_velocity_float = test_floats()(
+    partial(_anim_func, 1, ngl.AnimatedFloat, _float_kf_func, velocity_type=ngl.VelocityFloat)
+)
+anim_velocity_vec2 = test_floats()(
+    partial(_anim_func, 2, ngl.AnimatedVec2, _vec2_kf_func, velocity_type=ngl.VelocityVec2)
+)
+anim_velocity_vec3 = test_floats()(
+    partial(_anim_func, 3, ngl.AnimatedVec3, _vec3_kf_func, velocity_type=ngl.VelocityVec3)
+)
+anim_velocity_vec4 = test_floats()(
+    partial(_anim_func, 4, ngl.AnimatedVec4, _vec4_kf_func, velocity_type=ngl.VelocityVec4)
+)
