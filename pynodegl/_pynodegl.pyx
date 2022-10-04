@@ -263,6 +263,11 @@ cdef class _Node:
     def serialize(self):
         return _ret_pystr(ngl_node_serialize(self.ctx))
 
+    @classmethod
+    def deserialize(cls, s: str):
+        cdef ngl_node *scene = ngl_node_deserialize(s)
+        return cls(ctx=<uintptr_t>scene)
+
     def dot(self):
         return _ret_pystr(ngl_node_dot(self.ctx))
 
