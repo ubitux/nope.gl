@@ -41,7 +41,7 @@
  *
  * This value needs to be kept in sync with MAX_DEPTH in the compute shaders.
  */
-#define MAX_BIT_DEPTH 8
+#define MAX_BIT_DEPTH 10
 
 struct colorstats_opts {
     struct ngl_node *texture_node;
@@ -365,8 +365,11 @@ static void colorstats_draw(struct ngl_node *node)
 {
     struct colorstats_priv *s = node->priv_data;
 
+    LOG(ERROR, "colorstats draw");
+
     struct ngl_ctx *ctx = node->ctx;
     if (ctx->render_pass_started) {
+        LOG(ERROR, "render pass started, end it");
         struct gpu_ctx *gpu_ctx = ctx->gpu_ctx;
         ngli_gpu_ctx_end_render_pass(gpu_ctx);
         ctx->render_pass_started = 0;

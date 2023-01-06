@@ -981,8 +981,10 @@ static int renderwaveform_prepare(struct ngl_node *node)
 
 static void renderother_draw(struct ngl_node *node, struct render_common *s, const struct render_common_opts *o)
 {
-    if (s->extra_draw_node)
+    if (s->extra_draw_node) {
+        LOG(ERROR, "%s extra draw node -> draw %p", node->label, s->extra_draw_node);
         ngli_node_draw(s->extra_draw_node);
+    }
 
     struct ngl_ctx *ctx = node->ctx;
     struct pipeline_desc *descs = ngli_darray_data(&s->pipeline_descs);
@@ -1012,6 +1014,7 @@ static void renderother_draw(struct ngl_node *node, struct render_common *s, con
         ngli_pipeline_compat_update_texture_info(pl_compat, info);
     }
 
+    LOG(ERROR, "%s render pass started: %d", node->label, ctx->render_pass_started);
     if (!ctx->render_pass_started) {
         struct gpu_ctx *gpu_ctx = ctx->gpu_ctx;
         ngli_gpu_ctx_begin_render_pass(gpu_ctx, ctx->current_rendertarget);

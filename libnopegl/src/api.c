@@ -318,7 +318,7 @@ int ngli_ctx_draw(struct ngl_ctx *s, double t)
 
     struct ngl_node *scene = s->scene;
     if (scene) {
-        LOG(DEBUG, "draw scene %s @ t=%f", scene->label, t);
+        LOG(ERROR, "draw scene %s @ t=%f", scene->label, t);
         ngli_node_draw(scene);
     }
 

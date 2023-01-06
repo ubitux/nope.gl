@@ -680,8 +680,8 @@ def scopes(cfg, scene0="media", scene1="waveform/parade", scene2="waveform/mixed
             continue
         render_name, mode = scene.split("/", maxsplit=1)
         if render_name == "histogram":
-            render = ngl.RenderHistogram(stats=stats, mode=mode)
+            render = ngl.RenderHistogram(stats=stats, mode=mode, label=scene)
         else:
-            render = ngl.RenderWaveform(stats=stats, mode=mode)
+            render = ngl.RenderWaveform(stats=stats, mode=mode, label=scene)
         children.append(render)
     return autogrid_simple(children)

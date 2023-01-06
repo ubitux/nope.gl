@@ -20,7 +20,7 @@
  * under the License.
  */
 
-#define MAX_DEPTH 256 /* 8-bit */
+#define MAX_DEPTH 1024 /* 8-bit */
 
 /*
  * Shared histogram corresponding to 1 column of pixels from the input image.
