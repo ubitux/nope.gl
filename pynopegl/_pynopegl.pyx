@@ -149,6 +149,9 @@ cdef extern from "nopegl.h":
         const char *hud_export_filename
         int hud_scale
 
+        void *user_arg;
+        void (*cb_resized)(void *user_arg, int w, int h);
+
     cdef union ngl_livectl_data:
         float f[4]
         int32_t i[4]
@@ -604,10 +607,21 @@ cdef class Context:
             config.hud_export_filename = hud_export_filename
         config.hud_scale = kwargs.get('hud_scale', 0)
 
+    @staticmethod
+    cdef void _on_resize(void *user_arg, int w, int h) with gil:
+        Context.on_resize(<Context>user_arg, w, h)
+
+    def on_resize(self, w: int, h: int):
+        print("on resize", w, h)
+
     def configure(self, **kwargs):
         self.capture_buffer = kwargs.get('capture_buffer')
         cdef ngl_config config
         Context._init_ngl_config_from_dict(&config, kwargs)
+
+        config.user_arg = <void *>self
+        config.cb_resized = Context._on_resize
+
         return ngl_configure(self.ctx, &config)
 
     def resize(self, width, height, viewport=None):

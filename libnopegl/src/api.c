@@ -665,7 +665,12 @@ int ngl_resize(struct ngl_ctx *s, int width, int height, const int *viewport)
         return NGL_ERROR_INVALID_USAGE;
     }
 
-    return s->api_impl->resize(s, width, height, viewport);
+    int ret = s->api_impl->resize(s, width, height, viewport);
+
+    if (s->config.cb_resized)
+        s->config.cb_resized(s->config.user_arg, width, height);
+
+    return ret;
 }
 
 int ngl_set_capture_buffer(struct ngl_ctx *s, void *capture_buffer)
