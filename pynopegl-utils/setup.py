@@ -31,6 +31,7 @@ setup(
             "ngl-control = pynopegl_utils.controller:run",
             "ngl-test = pynopegl_utils.tests:run",
             "ngl-diff = pynopegl_utils.diff:run",
+            "ngl-shell = pynopegl_utils.shell:run",
         ],
     },
     package_data={
