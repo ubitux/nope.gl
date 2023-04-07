@@ -925,4 +925,36 @@ NGL_API int ngl_android_set_application_context(void *application_context);
  */
 NGL_API void *ngl_android_get_application_context(void);
 
+/**
+ * Player API
+ */
+
+struct ngl_player_config {
+    const char *win_title;
+    const struct ngl_config *cfg;
+
+    /* callbacks */
+    void (*on_initialized)(void);
+    void (*on_resized)(int32_t w, int32_t h);
+    void (*on_time_changed)(double t);
+    // pre + post draw callback?
+};
+
+struct ngl_player;
+
+NGL_API struct ngl_player *ngl_player_create(const struct ngl_player_config *cfg);
+NGL_API int ngl_player_init(struct ngl_player *s);
+
+NGL_API int ngl_player_set_scene(struct ngl_player *s, struct ngl_scene *scene);
+
+NGL_API int ngl_player_start(struct ngl_player *s);
+NGL_API int ngl_player_stop(struct ngl_player *s);
+NGL_API int ngl_player_seek(struct ngl_player *s);
+
+// XXX ngl_player_snapshot(struct ngl_player *p, double t);
+
+NGL_API void ngl_player_main_loop(struct ngl_player *s);
+
+NGL_API void ngl_player_freep(struct ngl_player **s);
+
 #endif

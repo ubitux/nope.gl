@@ -223,6 +223,7 @@ lib_src = files(
   'src/pgcraft.c',
   'src/pipeline.c',
   'src/pipeline_compat.c',
+  'src/player.c',
   'src/precision.c',
   'src/program.c',
   'src/rendertarget.c',
@@ -234,6 +235,21 @@ lib_src = files(
   'src/type.c',
   'src/utils.c',
 )
+
+# Window System Integration
+wsi_src_system = {
+  'linux': files('src/wsi/linux.c'),
+  'darwin': files('src/wsi/cocoa.m'),
+  'windows': files('src/wsi/windows.c'),
+}
+wsi_src = files('src/wsi/wsi.c') + wsi_src_system.get(host_system, [])
+lib_src += wsi_src
+if host_system == 'darwin'
+  wsi_deps += [dependency('appleframeworks', modules: 'AppKit', required: false)]
+endif
+if host_system == 'darwin'
+  add_languages('objc')
+endif
 
 if host_machine.cpu_family() == 'aarch64'
   lib_src += files('src/asm_aarch64.S')
@@ -274,6 +290,7 @@ lib_deps = [
   cc.find_library('m', required: false),
   dependency('libnopemd', version: '>= 10.0.0'),
   dependency('threads'),
+  dependency('sdl2'),
 ]
 
 host_cfg = hosts_cfg.get(host_system, {})
