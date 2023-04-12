@@ -194,7 +194,7 @@ static void set_uniforms(struct pipeline *s, struct glcontext *gl)
     struct pipeline_gl *s_priv = (struct pipeline_gl *)s;
 
     const struct uniform_binding *bindings = ngli_darray_data(&s_priv->uniform_bindings);
-    for (int i = 0; i < ngli_darray_count(&s_priv->uniform_bindings); i++) {
+    for (size_t i = 0; i < ngli_darray_count(&s_priv->uniform_bindings); i++) {
         const struct uniform_binding *uniform_binding = &bindings[i];
         if (uniform_binding->data)
             uniform_binding->set(gl, uniform_binding->location, uniform_binding->desc.count, uniform_binding->data);
@@ -272,7 +272,7 @@ static void set_textures(struct pipeline *s, struct glcontext *gl)
     struct pipeline_gl *s_priv = (struct pipeline_gl *)s;
     uint64_t texture_units = s_priv->used_texture_units;
     const struct texture_binding *bindings = ngli_darray_data(&s_priv->texture_bindings);
-    for (int i = 0; i < ngli_darray_count(&s_priv->texture_bindings); i++) {
+    for (size_t i = 0; i < ngli_darray_count(&s_priv->texture_bindings); i++) {
         const struct texture_binding *texture_binding = &bindings[i];
         const struct texture *texture = texture_binding->texture;
         const struct texture_gl *texture_gl = (const struct texture_gl *)texture;
@@ -310,7 +310,7 @@ static void set_buffers(struct pipeline *s, struct glcontext *gl)
     struct pipeline_gl *s_priv = (struct pipeline_gl *)s;
 
     const struct buffer_binding *bindings = ngli_darray_data(&s_priv->buffer_bindings);
-    for (int i = 0; i < ngli_darray_count(&s_priv->buffer_bindings); i++) {
+    for (size_t i = 0; i < ngli_darray_count(&s_priv->buffer_bindings); i++) {
         const struct buffer_binding *buffer_binding = &bindings[i];
         const struct buffer *buffer = buffer_binding->buffer;
         const struct buffer_gl *buffer_gl = (const struct buffer_gl *)buffer;
@@ -362,7 +362,7 @@ static void set_vertex_attribs(const struct pipeline *s, struct glcontext *gl)
     struct pipeline_gl *s_priv = (struct pipeline_gl *)s;
 
     const struct attribute_binding *bindings = ngli_darray_data(&s_priv->attribute_bindings);
-    for (int i = 0; i < ngli_darray_count(&s_priv->attribute_bindings); i++) {
+    for (size_t i = 0; i < ngli_darray_count(&s_priv->attribute_bindings); i++) {
         const struct attribute_binding *attribute_binding = &bindings[i];
         const struct buffer *buffer = attribute_binding->buffer;
         const struct buffer_gl *buffer_gl = (const struct buffer_gl *)buffer;
@@ -386,7 +386,7 @@ static void reset_vertex_attribs(const struct pipeline *s, struct glcontext *gl)
     struct pipeline_gl *s_priv = (struct pipeline_gl *)s;
 
     const struct attribute_binding *bindings = ngli_darray_data(&s_priv->attribute_bindings);
-    for (int i = 0; i < ngli_darray_count(&s_priv->attribute_bindings); i++) {
+    for (size_t i = 0; i < ngli_darray_count(&s_priv->attribute_bindings); i++) {
         const struct attribute_binding *attribute_binding = &bindings[i];
         const GLuint location = attribute_binding->desc.location;
         ngli_glDisableVertexAttribArray(gl, location);
@@ -436,7 +436,7 @@ static void init_vertex_attribs(const struct pipeline *s, struct glcontext *gl)
     struct pipeline_gl *s_priv = (struct pipeline_gl *)s;
 
     const struct attribute_binding *descs = ngli_darray_data(&s_priv->attribute_bindings);
-    for (int i = 0; i < ngli_darray_count(&s_priv->attribute_bindings); i++) {
+    for (size_t i = 0; i < ngli_darray_count(&s_priv->attribute_bindings); i++) {
         const struct attribute_binding *attribute_binding = &descs[i];
         const GLuint location = attribute_binding->desc.location;
         ngli_glEnableVertexAttribArray(gl, location);
@@ -500,7 +500,7 @@ static GLbitfield get_memory_barriers(const struct pipeline *s)
 
     GLbitfield barriers = 0;
     const struct buffer_binding *buffer_bindings = ngli_darray_data(&s_priv->buffer_bindings);
-    for (int i = 0; i < ngli_darray_count(&s_priv->buffer_bindings); i++) {
+    for (size_t i = 0; i < ngli_darray_count(&s_priv->buffer_bindings); i++) {
         const struct buffer_binding *binding = &buffer_bindings[i];
         const struct buffer_gl *buffer_gl = (const struct buffer_gl *)binding->buffer;
         if (!buffer_gl)
@@ -511,7 +511,7 @@ static GLbitfield get_memory_barriers(const struct pipeline *s)
     }
 
     const struct texture_binding *texture_bindings = ngli_darray_data(&s_priv->texture_bindings);
-    for (int i = 0; i < ngli_darray_count(&s_priv->texture_bindings); i++) {
+    for (size_t i = 0; i < ngli_darray_count(&s_priv->texture_bindings); i++) {
         const struct texture_binding *binding = &texture_bindings[i];
         const struct texture_gl *texture_gl = (const struct texture_gl *)binding->texture;
         if (!texture_gl)
