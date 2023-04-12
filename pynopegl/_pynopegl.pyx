@@ -119,7 +119,7 @@ cdef extern from "nopegl.h":
         const char *name
         int is_default
         ngl_cap *caps
-        int nb_caps
+        size_t nb_caps
 
     cdef struct ngl_ctx
 
