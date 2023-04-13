@@ -174,7 +174,7 @@ cdef extern from "nopegl.h":
     int ngl_set_scene(ngl_ctx *s, ngl_node *scene)
     int ngl_draw(ngl_ctx *s, double t) nogil
     char *ngl_dot(ngl_ctx *s, double t) nogil
-    int ngl_livectls_get(ngl_node *scene, int *nb_livectlsp, ngl_livectl **livectlsp)
+    int ngl_livectls_get(ngl_node *scene, size_t *nb_livectlsp, ngl_livectl **livectlsp)
     void ngl_livectls_freep(ngl_livectl **livectlsp)
     void ngl_freep(ngl_ctx **ss)
 
@@ -480,7 +480,7 @@ _TYPES_COUNT = {
 
 
 def get_livectls(_Node scene):
-    cdef int nb_livectls = 0
+    cdef size_t nb_livectls = 0
     cdef ngl_livectl *livectls = NULL
     cdef int ret = ngl_livectls_get(scene.ctx, &nb_livectls, &livectls)
     if ret < 0:

@@ -731,7 +731,7 @@ int ngl_gl_wrap_framebuffer(struct ngl_ctx *s, uint32_t framebuffer)
     return 0;
  }
 
-int ngl_livectls_get(struct ngl_node *scene, int *nb_livectlsp, struct ngl_livectl **livectlsp)
+int ngl_livectls_get(struct ngl_node *scene, size_t *nb_livectlsp, struct ngl_livectl **livectlsp)
 {
     return ngli_node_livectls_get(scene, nb_livectlsp, livectlsp);
 }
