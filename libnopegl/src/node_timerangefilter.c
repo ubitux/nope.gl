@@ -31,13 +31,13 @@
 struct timerangefilter_opts {
     struct ngl_node *child;
     struct ngl_node **ranges;
-    int nb_ranges;
+    size_t nb_ranges;
     double prefetch_time;
     double max_idle_time;
 };
 
 struct timerangefilter_priv {
-    int current_range;
+    size_t current_range;
     int drawme;
 };
 
@@ -66,7 +66,7 @@ static int timerangefilter_init(struct ngl_node *node)
     const struct timerangefilter_opts *o = node->opts;
 
     double prev_start_time = -DBL_MAX;
-    for (int i = 0; i < o->nb_ranges; i++) {
+    for (size_t i = 0; i < o->nb_ranges; i++) {
         const struct timerangemode_opts *trm = o->ranges[i]->opts;
 
         if (trm->start_time < prev_start_time) {
@@ -90,11 +90,11 @@ static int timerangefilter_init(struct ngl_node *node)
     return 0;
 }
 
-static int get_rr_id(const struct timerangefilter_opts *o, int start, double t)
+static size_t get_rr_id(const struct timerangefilter_opts *o, size_t start, double t)
 {
-    int ret = -1;
+    size_t ret = SIZE_MAX;
 
-    for (int i = start; i < o->nb_ranges; i++) {
+    for (size_t i = start; i < o->nb_ranges; i++) {
         const struct timerangemode_opts *rr = o->ranges[i]->opts;
         if (rr->start_time > t)
             break;
@@ -103,20 +103,20 @@ static int get_rr_id(const struct timerangefilter_opts *o, int start, double t)
     return ret;
 }
 
-static int update_rr_state(struct timerangefilter_priv *s, const struct timerangefilter_opts *o, double t)
+static size_t update_rr_state(struct timerangefilter_priv *s, const struct timerangefilter_opts *o, double t)
 {
     if (!o->nb_ranges)
         return NGL_ERROR_INVALID_ARG;
 
-    int rr_id = get_rr_id(o, s->current_range, t);
-    if (rr_id < 0) {
+    size_t rr_id = get_rr_id(o, s->current_range, t);
+    if (rr_id == SIZE_MAX) {
         // range not found, probably backward in time so look from the
         // start
         // TODO: look for rr using bsearch?
         rr_id = get_rr_id(o, 0, t);
     }
 
-    if (rr_id >= 0) {
+    if (rr_id != SIZE_MAX) {
         if (s->current_range != rr_id) {
             // We leave our current render range, so we reset the "Once" flag
             // for next time we may come in again (seek back)
@@ -145,9 +145,9 @@ static int timerangefilter_visit(struct ngl_node *node, int is_active, double t)
      * children from a dead parent can be revealed by another living branch.
      */
     if (is_active) {
-        const int rr_id = update_rr_state(s, o, t);
+        const size_t rr_id = update_rr_state(s, o, t);
 
-        if (rr_id >= 0) {
+        if (rr_id != SIZE_MAX) {
             struct ngl_node *rr = o->ranges[rr_id];
 
             s->current_range = rr_id;
@@ -202,8 +202,8 @@ static int timerangefilter_update(struct ngl_node *node, double t)
 
     s->drawme = 0;
 
-    const int rr_id = update_rr_state(s, o, t);
-    if (rr_id >= 0) {
+    const size_t rr_id = update_rr_state(s, o, t);
+    if (rr_id != SIZE_MAX) {
         struct ngl_node *rr = o->ranges[rr_id];
 
         if (rr->cls->id == NGL_NODE_TIMERANGEMODENOOP)
