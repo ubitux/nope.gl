@@ -23,6 +23,8 @@ Versioning](https://semver.org/spec/v2.0.0.html) for `libnopegl`.
 - `max_texture_dimensions_*` capabilities are renamed to `max_texture_dimension_*`
 - Backend probing in `pynopegl` now returns a more Pythonic output
 - `GraphicConfig.scissor` is now an `ivec4` parameter instead of `vec4`
+- All counters and size-based arguments in the public API are now using `size_t`
+  instead of `int`
 
 ### Removed
 - `ResourceProps.variadic` bool flag as it was never a functional interface
