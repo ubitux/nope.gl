@@ -289,7 +289,7 @@ static int inject_uniform(struct pgcraft *s, struct bstr *b,
 static int inject_uniforms(struct pgcraft *s, struct bstr *b,
                            const struct pgcraft_params *params, int stage)
 {
-    for (int i = 0; i < params->nb_uniforms; i++) {
+    for (size_t i = 0; i < params->nb_uniforms; i++) {
         const struct pgcraft_uniform *uniform = &params->uniforms[i];
         if (uniform->stage != stage)
             continue;
@@ -403,7 +403,7 @@ static int prepare_texture_info_fields(struct pgcraft *s, const struct pgcraft_p
  */
 static int prepare_texture_infos(struct pgcraft *s, const struct pgcraft_params *params, int graphics)
 {
-    for (int i = 0; i < params->nb_textures; i++) {
+    for (size_t i = 0; i < params->nb_textures; i++) {
         const struct pgcraft_texture *texture = &params->textures[i];
         ngli_assert(!(texture->type == NGLI_PGCRAFT_SHADER_TEX_TYPE_VIDEO && texture->texture));
 
@@ -576,7 +576,7 @@ static int inject_block(struct pgcraft *s, struct bstr *b,
 static int inject_blocks(struct pgcraft *s, struct bstr *b,
                          const struct pgcraft_params *params, int stage)
 {
-    for (int i = 0; i < params->nb_blocks; i++) {
+    for (size_t i = 0; i < params->nb_blocks; i++) {
         const struct pgcraft_block *block = &params->blocks[i];
         if (block->stage != stage)
             continue;
@@ -636,7 +636,7 @@ static int inject_attribute(struct pgcraft *s, struct bstr *b,
 static int inject_attributes(struct pgcraft *s, struct bstr *b,
                              const struct pgcraft_params *params)
 {
-    for (int i = 0; i < params->nb_attributes; i++) {
+    for (size_t i = 0; i < params->nb_attributes; i++) {
         int ret = inject_attribute(s, b, &params->attributes[i]);
         if (ret < 0)
             return ret;
@@ -680,7 +680,7 @@ static int inject_ublock(struct pgcraft *s, struct bstr *b, int stage)
 
 static int params_have_ssbos(struct pgcraft *s, const struct pgcraft_params *params, int stage)
 {
-    for (int i = 0; i < params->nb_blocks; i++) {
+    for (size_t i = 0; i < params->nb_blocks; i++) {
         const struct pgcraft_block *pgcraft_block = &params->blocks[i];
         if (pgcraft_block->stage == stage && pgcraft_block->type == NGLI_TYPE_STORAGE_BUFFER)
             return 1;
@@ -776,7 +776,7 @@ static void set_glsl_header(struct pgcraft *s, struct bstr *b, const struct pgcr
 static int texture_needs_clamping(const struct pgcraft_params *params,
                                   const char *name, size_t name_len)
 {
-    for (int i = 0; i < params->nb_textures; i++) {
+    for (size_t i = 0; i < params->nb_textures; i++) {
         const struct pgcraft_texture *pgcraft_texture = &params->textures[i];
         if (!strncmp(name, pgcraft_texture->name, name_len))
             return pgcraft_texture->clamp_video;
@@ -787,7 +787,7 @@ static int texture_needs_clamping(const struct pgcraft_params *params,
 static enum pgcraft_shader_tex_type get_texture_type(const struct pgcraft_params *params,
                                                      const char *name, size_t name_len)
 {
-    for (int i = 0; i < params->nb_textures; i++) {
+    for (size_t i = 0; i < params->nb_textures; i++) {
         const struct pgcraft_texture *pgcraft_texture = &params->textures[i];
         if (!strncmp(name, pgcraft_texture->name, name_len))
             return pgcraft_texture->type;
