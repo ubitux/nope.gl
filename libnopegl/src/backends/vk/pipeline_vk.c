@@ -450,7 +450,7 @@ static VkResult create_desc_set_layout_bindings(struct pipeline *s, const struct
             return VK_ERROR_OUT_OF_HOST_MEMORY;
 
         ngli_assert(desc_pool_size_map[desc->type].type);
-        desc_pool_size_map[desc->type].descriptorCount += gpu_ctx_vk->nb_in_flight_frames;
+        desc_pool_size_map[desc->type].descriptorCount += (uint32_t)gpu_ctx_vk->nb_in_flight_frames;
     }
 
     for (int i = 0; i < layout->nb_textures; i++) {
@@ -474,7 +474,7 @@ static VkResult create_desc_set_layout_bindings(struct pipeline *s, const struct
             return VK_ERROR_OUT_OF_HOST_MEMORY;
 
         ngli_assert(desc_pool_size_map[desc->type].type);
-        desc_pool_size_map[desc->type].descriptorCount += gpu_ctx_vk->nb_in_flight_frames;
+        desc_pool_size_map[desc->type].descriptorCount += (uint32_t)gpu_ctx_vk->nb_in_flight_frames;
     }
 
     uint32_t nb_desc_pool_sizes = 0;
@@ -490,7 +490,7 @@ static VkResult create_desc_set_layout_bindings(struct pipeline *s, const struct
         .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .poolSizeCount = nb_desc_pool_sizes,
         .pPoolSizes    = desc_pool_sizes,
-        .maxSets       = gpu_ctx_vk->nb_in_flight_frames,
+        .maxSets       = (uint32_t)gpu_ctx_vk->nb_in_flight_frames,
     };
 
     VkResult res = vkCreateDescriptorPool(vk->device, &descriptor_pool_create_info, NULL, &s_priv->desc_pool);
@@ -529,13 +529,13 @@ static VkResult create_desc_sets(struct pipeline *s)
     if (!desc_set_layouts)
         return VK_ERROR_OUT_OF_HOST_MEMORY;
 
-    for (int i = 0; i < gpu_ctx_vk->nb_in_flight_frames; i++)
+    for (size_t i = 0; i < gpu_ctx_vk->nb_in_flight_frames; i++)
         desc_set_layouts[i] = s_priv->desc_set_layout;
 
     const VkDescriptorSetAllocateInfo descriptor_set_allocate_info = {
         .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .descriptorPool     = s_priv->desc_pool,
-        .descriptorSetCount = gpu_ctx_vk->nb_in_flight_frames,
+        .descriptorSetCount = (uint32_t)gpu_ctx_vk->nb_in_flight_frames,
         .pSetLayouts        = desc_set_layouts
     };
 

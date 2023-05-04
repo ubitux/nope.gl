@@ -58,8 +58,8 @@ struct gpu_ctx_vk {
     int width;
     int height;
 
-    int nb_in_flight_frames;
-    int cur_frame_index;
+    size_t nb_in_flight_frames;
+    size_t cur_frame_index;
 
     struct darray colors;
     struct darray ms_colors;

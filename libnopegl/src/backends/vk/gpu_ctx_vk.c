@@ -168,8 +168,8 @@ static VkResult create_render_resources(struct gpu_ctx *s)
                            : ngli_format_vk_to_ngl(s_priv->surface_format.format);
     const int ds_format = vk->preferred_depth_stencil_format;
 
-    const int nb_images = config->offscreen ? s_priv->nb_in_flight_frames : s_priv->nb_images;
-    for (uint32_t i = 0; i < nb_images; i++) {
+    const size_t nb_images = config->offscreen ? s_priv->nb_in_flight_frames : s_priv->nb_images;
+    for (size_t i = 0; i < nb_images; i++) {
         struct texture *color = NULL;
         if (config->offscreen) {
             VkResult res = create_texture(s, color_format, 0, COLOR_USAGE, &color);
@@ -351,7 +351,7 @@ static VkResult create_command_pool_and_buffers(struct gpu_ctx *s)
     if (!s_priv->cmds || !s_priv->update_cmds)
         return VK_ERROR_OUT_OF_HOST_MEMORY;
 
-    for (int i = 0; i < s_priv->nb_in_flight_frames; i++) {
+    for (size_t i = 0; i < s_priv->nb_in_flight_frames; i++) {
         s_priv->cmds[i] = ngli_cmd_vk_create(s);
         if (!s_priv->cmds[i])
             return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -378,13 +378,13 @@ static void destroy_command_pool_and_buffers(struct gpu_ctx *s)
     struct vkcontext *vk = s_priv->vkcontext;
 
     if (s_priv->cmds) {
-        for (int i = 0; i < s_priv->nb_in_flight_frames; i++)
+        for (size_t i = 0; i < s_priv->nb_in_flight_frames; i++)
             ngli_cmd_vk_freep(&s_priv->cmds[i]);
         ngli_freep(&s_priv->cmds);
     }
 
     if (s_priv->update_cmds) {
-        for (int i = 0; i < s_priv->nb_in_flight_frames; i++)
+        for (size_t i = 0; i < s_priv->nb_in_flight_frames; i++)
             ngli_cmd_vk_freep(&s_priv->update_cmds[i]);
         ngli_freep(&s_priv->update_cmds);
     }
@@ -416,7 +416,7 @@ static VkResult create_semaphores(struct gpu_ctx *s)
     };
 
     VkResult res;
-    for (int i = 0; i < s_priv->nb_in_flight_frames; i++) {
+    for (size_t i = 0; i < s_priv->nb_in_flight_frames; i++) {
         if ((res = vkCreateSemaphore(vk->device, &sem_create_info, NULL,
                                      &s_priv->image_avail_sems[i])) != VK_SUCCESS ||
             (res = vkCreateSemaphore(vk->device, &sem_create_info, NULL,
@@ -438,19 +438,19 @@ static void destroy_semaphores(struct gpu_ctx *s)
     struct vkcontext *vk = s_priv->vkcontext;
 
     if (s_priv->update_finished_sems) {
-        for (uint32_t i = 0; i < s_priv->nb_in_flight_frames; i++)
+        for (size_t i = 0; i < s_priv->nb_in_flight_frames; i++)
             vkDestroySemaphore(vk->device, s_priv->update_finished_sems[i], NULL);
         ngli_freep(&s_priv->update_finished_sems);
     }
 
     if (s_priv->render_finished_sems) {
-        for (uint32_t i = 0; i < s_priv->nb_in_flight_frames; i++)
+        for (size_t i = 0; i < s_priv->nb_in_flight_frames; i++)
             vkDestroySemaphore(vk->device, s_priv->render_finished_sems[i], NULL);
         ngli_freep(&s_priv->render_finished_sems);
     }
 
     if (s_priv->image_avail_sems) {
-        for (uint32_t i = 0; i < s_priv->nb_in_flight_frames; i++)
+        for (size_t i = 0; i < s_priv->nb_in_flight_frames; i++)
             vkDestroySemaphore(vk->device, s_priv->image_avail_sems[i], NULL);
         ngli_freep(&s_priv->image_avail_sems);
     }
