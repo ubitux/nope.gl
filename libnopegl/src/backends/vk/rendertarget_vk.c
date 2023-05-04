@@ -369,7 +369,7 @@ VkResult ngli_rendertarget_vk_init(struct rendertarget *s, const struct renderta
     const VkFramebufferCreateInfo framebuffer_create_info = {
         .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .renderPass      = s_priv->render_pass,
-        .attachmentCount = s_priv->nb_attachments,
+        .attachmentCount = (uint32_t)s_priv->nb_attachments,
         .pAttachments    = s_priv->attachments,
         .width           = s->width,
         .height          = s->height,
@@ -392,7 +392,7 @@ void ngli_rendertarget_vk_freep(struct rendertarget **sp)
     vkDestroyRenderPass(vk->device, s_priv->render_pass, NULL);
     vkDestroyFramebuffer(vk->device, s_priv->framebuffer, NULL);
 
-    for (int i = 0; i < s_priv->nb_attachments; i++)
+    for (size_t i = 0; i < s_priv->nb_attachments; i++)
         vkDestroyImageView(vk->device, s_priv->attachments[i], NULL);
 
     vkDestroyBuffer(vk->device, s_priv->staging_buffer, NULL);
