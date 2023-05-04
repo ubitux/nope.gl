@@ -1318,7 +1318,7 @@ static void vk_begin_render_pass(struct gpu_ctx *s, struct rendertarget *rt)
             .extent.width  = rt->width,
             .extent.height = rt->height,
         },
-        .clearValueCount = rt_vk->nb_clear_values,
+        .clearValueCount = (uint32_t)rt_vk->nb_clear_values,
         .pClearValues    = rt_vk->clear_values,
     };
     vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
