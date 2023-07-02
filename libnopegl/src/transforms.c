@@ -27,44 +27,6 @@
 #include "math_utils.h"
 #include "transforms.h"
 
-int ngli_transform_chain_check(const struct ngl_node *node)
-{
-    while (node) {
-        const uint32_t id = node->cls->id;
-        switch (id) {
-            case NGL_NODE_ROTATE:
-            case NGL_NODE_ROTATEQUAT:
-            case NGL_NODE_SCALE:
-            case NGL_NODE_SKEW:
-            case NGL_NODE_TRANSFORM:
-            case NGL_NODE_TRANSLATE: {
-                const struct transform *trf = node->priv_data;
-                node = trf->child;
-                break;
-            }
-            case NGL_NODE_IDENTITY:
-                return 0;
-            default:
-                LOG(ERROR, "%s (%s) is not an allowed type for a transformation chain",
-                    node->label, node->cls->name);
-                return NGL_ERROR_INVALID_USAGE;
-        }
-    }
-
-    return 0;
-}
-
-void ngli_transform_chain_compute(const struct ngl_node *node, float *matrix)
-{
-    NGLI_ALIGNED_MAT(tmp) = NGLI_MAT4_IDENTITY;
-    while (node && node->cls->id != NGL_NODE_IDENTITY) {
-        const struct transform *transform = node->priv_data;
-        ngli_mat4_mul(tmp, tmp, transform->matrix);
-        node = transform->child;
-    }
-    memcpy(matrix, tmp, sizeof(tmp));
-}
-
 void ngli_transform_draw(struct ngl_node *node)
 {
     struct ngl_ctx *ctx = node->ctx;

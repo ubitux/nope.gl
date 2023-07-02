@@ -39,6 +39,7 @@ struct uniform_priv {
     float matrix[4*4];
     int32_t ivector[4];
     uint32_t uvector[4];
+    struct transforms *transform;
 };
 
 NGLI_STATIC_ASSERT(variable_info_is_first, offsetof(struct uniform_priv, var) == 0);
@@ -392,7 +393,7 @@ static int uniformmat4_update(struct ngl_node *node, double t)
         int ret = ngli_node_update(o->transform, t);
         if (ret < 0)
             return ret;
-        ngli_transform_chain_compute(o->transform, s->matrix);
+        ngli_transforms_compute(s->transform, s->matrix);
     }
     return 0;
 }
@@ -446,9 +447,14 @@ static int uniformmat4_init(struct ngl_node *node)
     struct uniform_priv *s = node->priv_data;
     const struct variable_opts *o = node->opts;
 
-    int ret = ngli_transform_chain_check(o->transform);
-    if (ret < 0)
-        return ret;
+    if (o->transform) {
+        s->transform = ngli_transforms_create();
+        if (!s->transform)
+            return NGL_ERROR_MEMORY;
+        int ret = ngli_transforms_push_matrices_from_nodes(s->transform, o->transform);
+        if (ret < 0)
+            return ret;
+    }
 
     s->var.data = s->matrix;
     s->var.data_size = sizeof(s->matrix);
@@ -473,6 +479,12 @@ static int uniformcolor_init(struct ngl_node *node)
     return uniformcolor_update_func(node);
 }
 
+static void uniform_uninit(struct ngl_node *node)
+{
+    struct uniform_priv *s = node->priv_data;
+    ngli_transforms_freep(&s->transform);
+}
+
 #define DEFINE_UNIFORM_CLASS(class_id, class_name, type)        \
 const struct node_class ngli_uniform##type##_class = {          \
     .id             = class_id,                                 \
@@ -480,6 +492,7 @@ const struct node_class ngli_uniform##type##_class = {          \
     .name           = class_name,                               \
     .init           = uniform##type##_init,                     \
     .update         = uniform##type##_update,                   \
+    .uninit         = uniform_uninit,                           \
     .opts_size      = sizeof(struct variable_opts),             \
     .priv_size      = sizeof(struct uniform_priv),              \
     .params         = uniform##type##_params,                   \

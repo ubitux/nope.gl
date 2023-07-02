@@ -109,6 +109,22 @@ def texteffect_transform(cfg: SceneCfg):
 
 @test_fingerprint(nb_keyframes=10, tolerance=1)
 @scene()
+def texteffect_scale(cfg: SceneCfg):
+    cfg.duration = 3
+    animkf = [
+        ngl.AnimKeyFrameVec3(0, (1, 1, 1)),
+        ngl.AnimKeyFrameVec3(0.5, (1.5, 1.5, 1), "exp_in"),
+        ngl.AnimKeyFrameVec3(1, (1, 1, 1), "exp_out"),
+    ]
+    scale = ngl.Scale(ngl.Identity(), factors=ngl.AnimatedVec3(animkf))
+    effects = [ngl.TextEffect(start=0, end=cfg.duration - 1, overlap=0.9, target="char", transform=scale)]
+    return ngl.Translate(
+        ngl.Text("Woosh", effects=effects, aspect_ratio=cfg.aspect_ratio, box_height=(0, 1, 0)), vector=(0, 1, 0)
+    )
+
+
+@test_fingerprint(nb_keyframes=10, tolerance=1)
+@scene()
 def texteffect_chars_space_nospace(cfg: SceneCfg):
     cfg.duration = 5
 

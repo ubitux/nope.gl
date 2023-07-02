@@ -418,6 +418,11 @@ enum {
     NGLI_TEXT_EFFECT_TEXT,
 };
 
+enum {
+    NGLI_TEXT_TRANSFORM_ORIGIN_TARGET,
+    NGLI_TEXT_TRANSFORM_ORIGIN_ABSOLUTE,
+};
+
 struct texteffect_opts {
     double start_time;
     double end_time;
@@ -435,6 +440,7 @@ struct texteffect_opts {
 
     /* if animated, expressed in target time (0 to 1) */
     struct ngl_node *transform_chain;
+    int transform_origin;
     struct ngl_node *color_node;
     float color[3];
     struct ngl_node *opacity_node;

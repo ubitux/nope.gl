@@ -37,6 +37,15 @@ static const struct param_choices target_choices = {
     }
 };
 
+static const struct param_choices transform_origin_choices = {
+    .name = "transform_origin",
+    .consts = {
+        {"target",   NGLI_TEXT_TRANSFORM_ORIGIN_TARGET,   .desc=NGLI_DOCSTRING("center of the selected effect `target`")},
+        {"absolute", NGLI_TEXT_TRANSFORM_ORIGIN_ABSOLUTE, .desc=NGLI_DOCSTRING("center of the screen")},
+        {NULL}
+    }
+};
+
 #define OFFSET(x) offsetof(struct texteffect_opts, x)
 static const struct node_param texteffect_params[] = {
     {"start",        NGLI_PARAM_TYPE_F64, OFFSET(start_time), {.f64=0.0},
@@ -62,6 +71,9 @@ static const struct node_param texteffect_params[] = {
     {"transform",    NGLI_PARAM_TYPE_NODE, OFFSET(transform_chain), .node_types=TRANSFORM_TYPES_LIST,
                      .flags=NGLI_PARAM_FLAG_DOT_DISPLAY_FIELDNAME,
                      .desc=NGLI_DOCSTRING("transformation chain")},
+    {"transform_origin", NGLI_PARAM_TYPE_SELECT, OFFSET(transform_origin), {.i32=NGLI_TEXT_TRANSFORM_ORIGIN_TARGET},
+                         .choices=&transform_origin_choices,
+                         .desc=NGLI_DOCSTRING("origin used to interpret the specified `transform`")},
     {"color",        NGLI_PARAM_TYPE_VEC3, OFFSET(color_node), {.vec={-1.f, -1.f, -1.f}},
                      .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
                      .desc=NGLI_DOCSTRING("characters fill color, use negative values for unchanged from previous text effects "
@@ -81,10 +93,6 @@ static int texteffect_init(struct ngl_node *node)
         LOG(ERROR, "end time must be strictly superior to start time");
         return NGL_ERROR_INVALID_ARG;
     }
-
-    int ret = ngli_transform_chain_check(o->transform_chain);
-    if (ret < 0)
-        return ret;
 
     return 0;
 }

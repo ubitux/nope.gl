@@ -216,7 +216,7 @@ static int set_vec3_value(float *dst, struct ngl_node *node, const float *value,
     return 0;
 }
 
-static int set_transform(float *dst, struct ngl_node *node, double t)
+static int set_transform(float *dst, struct ngl_node *node, int target, double t)
 {
     if (!node)
         return 0;
@@ -565,7 +565,7 @@ int ngli_text_set_time(struct text *s, double t)
             const double next_t = prev_t + duration;
             const double target_t = NGLI_LINEAR_NORM(prev_t, next_t, effect_t);
 
-            if ((ret = set_transform( s->data_ptrs.transform  + c * 4 * 4, effect_opts->transform_chain,                       target_t)) < 0 ||
+            if ((ret = set_transform( s->data_ptrs.transform  + c * 4 * 4, effect_opts->transform_chain, effect_opts->transform_origin, target_t)) < 0 ||
                 (ret = set_vec3_value(s->data_ptrs.color      + c * 3,     effect_opts->color_node,      effect_opts->color,   target_t)) < 0 ||
                 (ret = set_f32_value( s->data_ptrs.opacity    + c,         effect_opts->opacity_node,    effect_opts->opacity, target_t)) < 0)
                 return ret;
