@@ -20,7 +20,9 @@
  */
 
 #include <string.h>
+#include "darray.h"
 #include "log.h"
+#include "memory.h"
 #include "nopegl.h"
 #include "math_utils.h"
 #include "transforms.h"
@@ -81,4 +83,75 @@ void ngli_transform_draw(struct ngl_node *node)
     ngli_mat4_mul(next_matrix, prev_matrix, s->matrix);
     ngli_node_draw(child);
     ngli_darray_pop(&ctx->modelview_matrix_stack);
+}
+
+struct transforms {
+    struct darray matrices_refs;
+};
+
+struct transforms *ngli_transforms_create(void)
+{
+    struct transforms *s = ngli_calloc(1, sizeof(*s));
+    if (!s)
+        return NULL;
+    ngli_darray_init(&s->matrices_refs, sizeof(float *), 0);
+    return s;
+}
+
+int ngli_transforms_push_matrix_ref(struct transforms *s, const float *matrix)
+{
+    if (!ngli_darray_push(&s->matrices_refs, &matrix))
+        return NGL_ERROR_MEMORY;
+    return 0;
+}
+
+int ngli_transforms_push_matrices_from_nodes(struct transforms *s, const struct ngl_node *node)
+{
+    while (node) {
+        const uint32_t id = node->cls->id;
+        switch (id) {
+            case NGL_NODE_ROTATE:
+            case NGL_NODE_ROTATEQUAT:
+            case NGL_NODE_SCALE:
+            case NGL_NODE_SKEW:
+            case NGL_NODE_TRANSFORM:
+            case NGL_NODE_TRANSLATE: {
+                const struct transform *trf = node->priv_data;
+                int ret = ngli_transforms_push_matrix_ref(s, trf->matrix);
+                if (ret < 0)
+                    return ret;
+                node = trf->child;
+                break;
+            }
+            case NGL_NODE_IDENTITY:
+                return 0;
+            default:
+                LOG(ERROR, "%s (%s) is not an allowed type for a transformation chain",
+                    node->label, node->cls->name);
+                return NGL_ERROR_INVALID_USAGE;
+        }
+    }
+
+    return 0;
+}
+
+void ngli_transforms_compute(const struct transforms *s, float *dst)
+{
+    NGLI_ALIGNED_MAT(tmp) = NGLI_MAT4_IDENTITY;
+
+    const float **matrices = ngli_darray_data(&s->matrices_refs);
+    for (size_t i = 0; i < ngli_darray_count(&s->matrices_refs); i++) {
+        const float *matrix = matrices[i];
+        ngli_mat4_mul(tmp, tmp, matrix);
+    }
+    memcpy(dst, tmp, sizeof(tmp));
+}
+
+void ngli_transforms_freep(struct transforms **sp)
+{
+    struct transforms *s = *sp;
+    if (!s)
+        return;
+    ngli_darray_reset(&s->matrices_refs);
+    ngli_freep(sp);
 }

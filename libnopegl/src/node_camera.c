@@ -52,6 +52,11 @@ struct camera_priv {
     const float *eye_data;
     const float *center_data;
     const float *up_data;
+
+    struct transforms *eye_transform;
+    struct transforms *center_transform;
+    struct transforms *up_transform;
+
     int use_perspective;
     int use_orthographic;
 
@@ -59,16 +64,16 @@ struct camera_priv {
     NGLI_ALIGNED_MAT(projection_matrix);
 };
 
-static int apply_transform(float *v, struct ngl_node *transform, double t)
+static int apply_transform(float *v, struct ngl_node *node, const struct transforms *transform, double t)
 {
-    if (!transform)
+    if (!node)
         return 0;
 
-    int ret = ngli_node_update(transform, t);
+    int ret = ngli_node_update(node, t);
     if (ret < 0)
         return ret;
     NGLI_ALIGNED_MAT(matrix) = NGLI_MAT4_IDENTITY;
-    ngli_transform_chain_compute(transform, matrix);
+    ngli_transforms_compute(transform, matrix);
     ngli_mat4_mul_vec4(v, matrix, v);
 
     return 0;
@@ -87,9 +92,9 @@ static int update_matrices(struct ngl_node *node, double t)
     ngli_vec3_norm(up, s->up_data);
 
     int ret;
-    if ((ret = apply_transform(eye, o->eye_transform, t)) < 0 ||
-        (ret = apply_transform(center, o->center_transform, t)) < 0 ||
-        (ret = apply_transform(up, o->up_transform, t)) < 0)
+    if ((ret = apply_transform(eye, o->eye_transform, s->eye_transform, t)) < 0 ||
+        (ret = apply_transform(center, o->center_transform, s->center_transform, t)) < 0 ||
+        (ret = apply_transform(up, o->up_transform, s->up_transform, t)) < 0)
         return ret;
 
     float ground[3] = NGLI_VEC3_SUB(eye, center);
@@ -213,10 +218,16 @@ static int camera_init(struct ngl_node *node)
     s->center_data = ngli_node_get_data_ptr(o->center_node, o->center);
     s->up_data     = ngli_node_get_data_ptr(o->up_node, o->up);
 
+    s->eye_transform = ngli_transforms_create();
+    s->center_transform = ngli_transforms_create();
+    s->up_transform = ngli_transforms_create();
+    if (!s->eye_transform || !s->center_transform || !s->up_transform)
+        return NGL_ERROR_MEMORY;
+
     int ret;
-    if ((ret = ngli_transform_chain_check(o->eye_transform)) < 0 ||
-        (ret = ngli_transform_chain_check(o->center_transform)) < 0 ||
-        (ret = ngli_transform_chain_check(o->up_transform)) < 0)
+    if ((ret = ngli_transforms_push_matrices_from_nodes(s->eye_transform, o->eye_transform)) < 0 ||
+        (ret = ngli_transforms_push_matrices_from_nodes(s->center_transform, o->center_transform)) < 0 ||
+        (ret = ngli_transforms_push_matrices_from_nodes(s->up_transform, o->up_transform)) < 0)
         return ret;
 
     return 0;
@@ -266,12 +277,21 @@ static void camera_draw(struct ngl_node *node)
     ngli_darray_pop(&ctx->projection_matrix_stack);
 }
 
+static void camera_uninit(struct ngl_node *node)
+{
+    struct camera_priv *s = node->priv_data;
+    ngli_transforms_freep(&s->eye_transform);
+    ngli_transforms_freep(&s->center_transform);
+    ngli_transforms_freep(&s->up_transform);
+}
+
 const struct node_class ngli_camera_class = {
     .id        = NGL_NODE_CAMERA,
     .name      = "Camera",
     .init      = camera_init,
     .update    = camera_update,
     .draw      = camera_draw,
+    .uninit    = camera_uninit,
     .opts_size = sizeof(struct camera_opts),
     .priv_size = sizeof(struct camera_priv),
     .params    = camera_params,

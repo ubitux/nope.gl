@@ -28,4 +28,15 @@ int ngli_transform_chain_check(const struct ngl_node *node);
 void ngli_transform_chain_compute(const struct ngl_node *node, float *matrix);
 void ngli_transform_draw(struct ngl_node *node);
 
+struct transforms;
+
+struct transforms *ngli_transforms_create(void);
+
+int ngli_transforms_push_matrix_ref(struct transforms *s, const float *matrix);
+int ngli_transforms_push_matrices_from_nodes(struct transforms *s, const struct ngl_node *node);
+
+void ngli_transforms_compute(const struct transforms *s, float *matrix);
+
+void ngli_transforms_freep(struct transforms **sp);
+
 #endif
