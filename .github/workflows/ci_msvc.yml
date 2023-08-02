@@ -34,11 +34,20 @@ jobs:
 
       - name: Install dependencies
         run: |
+          "Before VulkanSDK Installer"
+          dir c:\Windows\SYSTEM32
+
           iwr https://sdk.lunarg.com/sdk/download/${{env.VULKAN_SDK_VERSION}}/windows/VulkanSDK-${{env.VULKAN_SDK_VERSION}}-Installer.exe -OutFile VulkanSDK-Installer.exe
           .\VulkanSDK-Installer.exe --accept-licenses --default-answer --confirm-command install
 
+          "Before VulkanSDK Installer"
+          dir c:\Windows\SYSTEM32
+
           iwr https://sdk.lunarg.com/sdk/download/${{env.VULKAN_SDK_VERSION}}/windows/VulkanRT-${{env.VULKAN_SDK_VERSION}}-Installer.exe -OutFile VulkanRT-Installer.exe
           .\VulkanRT-Installer.exe /S
+
+          "VulkanSDK installed"
+          dir c:\Windows\SYSTEM32
 
       - name: Build (${{matrix.build_backend}})
         run: |
