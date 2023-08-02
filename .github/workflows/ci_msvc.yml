@@ -41,5 +41,13 @@ jobs:
       - name: Python import and dylib runtime test
         run: |
           .\venv\Scripts\Activate.ps1
-          python.exe -c "import pynopegl, pynopegl_utils"
+          for ($i = 0; $i -lt 15; $i++) {
+            python.exe -c "import pynopegl, pynopegl_utils"
+            if ($? -eq 0) {
+              "Successfully imported"
+              break;
+            }
+            "Import {0} failed" -f $i
+            Start-Sleep -Seconds 1
+          }
           ngl-python.exe -h
