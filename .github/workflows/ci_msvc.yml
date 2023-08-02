@@ -61,7 +61,15 @@ jobs:
             $Env:VULKAN_SDK = "C:/VulkanSDK/${{env.VULKAN_SDK_VERSION}}"
           }
           .\scripts\msvc-env.ps1
+
+          "before configure"
+          dir c:\Windows\SYSTEM32
+
           python.exe .\configure.py --debug-opts gpu_capture --build-backend ${{matrix.build_backend}}
+
+          "after configure"
+          dir c:\Windows\SYSTEM32
+
           nmake
 
       - name: Python import and dylib runtime test
