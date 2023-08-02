@@ -57,6 +57,23 @@ jobs:
 
       - name: Python import and dylib runtime test
         run: |
+          dir .\venv\Scripts
+          dir .\pynopegl
+          dir c:\Windows\SYSTEM32
           .\venv\Scripts\Activate.ps1
-          python.exe -c "import pynopegl, pynopegl_utils"
+          "ngl-python.exe:"
+          bash -l -c "ldd venv/Scripts/ngl-python.exe"
+          "nopegl-0.dll:"
+          bash -l -c "ldd venv/Scripts/nopegl-0.dll"
           ngl-python.exe -h
+          for ($i = 0; $i -lt 15; $i++) {
+            python.exe -c "import pynopegl, pynopegl_utils"
+            $code = $LastExitCode
+            "Exit code: {0}" -f $code
+            if ($code -eq 0) {
+              "Successfully imported"
+              break;
+            }
+            "Import {0} failed" -f $i
+            Start-Sleep -Seconds 1
+          }
