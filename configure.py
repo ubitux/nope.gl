@@ -253,7 +253,10 @@ def _block(name, prerequisites=None):
 
 def _meson_compile_install_cmd(component, external=False):
     builddir = op.join("external", component, "builddir") if external else op.join("builddir", component)
-    return ["$(MESON) " + _cmd_join(action, "-C", builddir) for action in ("compile", "install")]
+    return [
+        "$(MESON) " + _cmd_join("compile", "-j", "1", "-C", builddir),
+        "$(MESON) " + _cmd_join("install", "-C", builddir),
+    ]
 
 
 @_block("pkgconf-setup")
