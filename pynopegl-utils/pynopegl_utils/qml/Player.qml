@@ -30,8 +30,10 @@ ColumnLayout {
     property var framerate: [60, 1]
     property real duration: 5
     property var aspect: [1, 1]
+    property bool has_stop_button: false
 
     signal timeChanged(real t)
+    signal stopped()
     signal mouseDown(real x, real y)
     signal zoom(real angle_delta, real x, real y)
     signal pan(real vx, real vy)
@@ -72,6 +74,11 @@ ColumnLayout {
     function stop_timer() {
         timer.stop()
         reset_running_time()
+    }
+
+    function stop() {
+        stop_timer()
+        stopped()
     }
 
     function set_frame_ts(ts) {
@@ -168,6 +175,12 @@ ColumnLayout {
     }
 
     Action {
+        id: stop_action
+        text: "■"
+        onTriggered: stop()
+    }
+
+    Action {
         id: prevframe_action
         text: "<"
         shortcut: "Left"
@@ -185,6 +198,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignCenter
 
+        Button { action: stop_action; visible: has_stop_button }
         Button { action: prevframe_action }
         Button { action: play_action }
         Button { action: nextframe_action }
