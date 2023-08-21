@@ -19,6 +19,8 @@
 # under the License.
 #
 
+from typing import Any, Dict, List
+
 from PySide6 import QtCore
 from PySide6.QtGui import QColor, QOpenGLContext, QOpenGLFunctions
 from PySide6.QtOpenGL import QOpenGLFramebufferObject, QOpenGLFramebufferObjectFormat
@@ -36,19 +38,9 @@ QML_IMPORT_MINOR_VERSION = 0
 class NopeGLWidget(QQuickFramebufferObject):
     livectls_changed = QtCore.Signal(object)
 
-    _NODE_TYPES_MODEL_MAP = dict(
-        UniformColor="color",
-        UniformBool="bool",
-        UniformVec2="vec2",
-        UniformVec3="vec3",
-        UniformVec4="vec4",
-        UniformMat4="mat4",
-        Text="text",
-    )
-
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._scene = None
+        # self._scene = None
         self.setMirrorVertically(True)
 
         # Fields used for sync with the renderer
@@ -59,32 +51,20 @@ class NopeGLWidget(QQuickFramebufferObject):
 
     def createRenderer(self):
         self._renderer = _NopeGLRenderer(self.window())
-
-        livectls = ngl.get_livectls(self._scene)
-        if livectls:
-            model_data = []
-            for label, ctl in livectls.items():
-                data = dict(
-                    type=self._NODE_TYPES_MODEL_MAP.get(ctl["node_type"], "range"),
-                    label=label,
-                    val=ctl["val"],
-                    node=ctl["node"],
-                )
-                if data["type"] not in ("bool", "text"):
-                    data["min"] = ctl["min"]
-                    data["max"] = ctl["max"]
-                if data["type"] == "color":
-                    data["val"] = QColor.fromRgbF(*ctl["val"])
-                model_data.append(data)
-            self.livectls_changes = {}
-            self.livectls_changed.emit(model_data)
-
-        self.request_scene = self._scene
-
         return self._renderer
 
     def set_scene(self, scene):
-        self._scene = scene
+        if scene:
+            model_data = livectl_get_model_data(scene)
+        else:
+            model_data = []
+            self.request_stop = True
+
+        self.livectls_changes = {}
+        self.livectls_changed.emit(model_data)
+
+        self.request_scene = scene
+        self.update()
 
     @QtCore.Slot(float)
     def set_time(self, t):
@@ -147,6 +127,7 @@ class _NopeGLRenderer(QQuickFramebufferObject.Renderer):
         self._window.beginExternalCommands()
 
         if self._request_stop:
+            print("stop request")
             self._request_scene = None
             assert self._context.set_scene(None) == 0
             self._t = 0.0
@@ -159,18 +140,7 @@ class _NopeGLRenderer(QQuickFramebufferObject.Renderer):
         self._context.gl_wrap_framebuffer(self._fbo.handle())
         self._context.resize(w, h, (0, 0, w, h))
 
-        for live_id, ctl in self._livectls_changes.items():
-            node = ctl["node"]
-            type_ = ctl["type"]
-            value = ctl["val"]
-            if type_ in ("range", "bool"):
-                node.set_value(value)
-            elif type_ == "color":
-                node.set_value(*QColor.getRgbF(value)[:3])
-            elif type_ == "text":
-                node.set_text(value)
-            elif type_.startswith("vec") or type_.startswith("mat"):
-                node.set_value(*value)
+        livectl_apply_changes(list(self._livectls_changes.values()))
         self._livectls_changes = {}
 
         self._context.draw(self._t)
@@ -192,3 +162,48 @@ class _NopeGLRenderer(QQuickFramebufferObject.Renderer):
         ngl_widget.request_stop = False
         ngl_widget.request_scene = None
         ngl_widget.livectls_changes = {}
+
+
+_NODE_TYPES_MODEL_MAP = dict(
+    UniformColor="color",
+    UniformBool="bool",
+    UniformVec2="vec2",
+    UniformVec3="vec3",
+    UniformVec4="vec4",
+    UniformMat4="mat4",
+    Text="text",
+)
+
+
+def livectl_apply_changes(changes: List[Dict[str, Any]]):
+    for ctl in changes:
+        node = ctl["node"]
+        type_ = ctl["type"]
+        value = ctl["val"]
+        if type_ in ("range", "bool"):
+            node.set_value(value)
+        elif type_ == "color":
+            node.set_value(*QColor.getRgbF(value)[:3])
+        elif type_ == "text":
+            node.set_text(value)
+        elif type_.startswith("vec") or type_.startswith("mat"):
+            node.set_value(*value)
+
+
+def livectl_get_model_data(scene) -> List[Dict[str, Any]]:
+    model_data = []
+    livectls = ngl.get_livectls(scene)
+    for label, ctl in livectls.items():
+        data = dict(
+            type=_NODE_TYPES_MODEL_MAP.get(ctl["node_type"], "range"),
+            label=label,
+            val=ctl["val"],
+            node=ctl["node"],
+        )
+        if data["type"] not in ("bool", "text"):
+            data["min"] = ctl["min"]
+            data["max"] = ctl["max"]
+        if data["type"] == "color":
+            data["val"] = QColor.fromRgbF(*ctl["val"])
+        model_data.append(data)
+    return model_data
