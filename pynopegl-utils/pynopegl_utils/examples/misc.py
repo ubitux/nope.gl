@@ -687,3 +687,60 @@ def scopes(cfg, scene0="media", scene1="waveform/parade", scene2="waveform/mixed
             render = ngl.RenderWaveform(stats=stats, mode=mode)
         children.append(render)
     return autogrid_simple(children)
+
+
+@scene(
+    controls=dict(
+        rotate_angle=scene.Range(range=[0, 360]),
+        color0=scene.Color(),
+        color1=scene.Color(),
+        text=scene.Text(),
+        linear=scene.Bool(),
+    )
+)
+def livechange_test(
+    cfg,
+    rotate_angle=15,
+    color_tl=(1, 0.5, 0, 1),
+    color_tr=(0, 1, 0, 1),
+    color_br=(0, 0.5, 1, 1),
+    color_bl=(1, 0, 1, 1),
+    linear=True,
+    text="Hello",
+):
+    cfg.aspect_ratio = (1, 1)
+    cfg.duration = 3
+    ucolor_tl = ngl.UniformColor(value=color_tl[:3], live_id="TL")
+    ucolor_tr = ngl.UniformColor(value=color_tr[:3], live_id="TR")
+    ucolor_br = ngl.UniformColor(value=color_br[:3], live_id="BR")
+    ucolor_bl = ngl.UniformColor(value=color_bl[:3], live_id="BL")
+    urotate = ngl.UniformFloat(value=rotate_angle, live_id="angle", live_min=0, live_max=360)
+    ulinear = ngl.UniformBool(value=linear, live_id="linear")
+    text_node = ngl.Text(
+        text,
+        bg_color=(0, 0, 0),
+        bg_opacity=0,
+        box_corner=(-0.5, -0.5, 0),
+        box_width=(1, 0, 0),
+        box_height=(0, 1, 0),
+        aspect_ratio=cfg.aspect_ratio,
+        live_id="text",
+    )
+
+    render = ngl.RenderGradient4(
+        color_tl=ucolor_tl,
+        color_tr=ucolor_tr,
+        color_br=ucolor_br,
+        color_bl=ucolor_bl,
+        linear=ulinear,
+        geometry=ngl.Quad(),
+    )
+    scene = ngl.Group(children=(render, text_node))
+    scene = ngl.Rotate(scene, angle=urotate)
+    scale_animkf = [
+        ngl.AnimKeyFrameVec3(0, (0.7, 0.7, 0.7)),
+        ngl.AnimKeyFrameVec3(cfg.duration / 2, (1.3, 1.3, 1.3), "exp_out"),
+        ngl.AnimKeyFrameVec3(cfg.duration, (0.7, 0.7, 0.7), "exp_in"),
+    ]
+    scene = ngl.Scale(scene, factors=ngl.AnimatedVec3(scale_animkf))
+    return scene
