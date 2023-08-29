@@ -38,6 +38,8 @@ from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, QStringList
 
 import pynopegl as ngl
 
+from .config import Config
+
 
 @dataclass
 class _EncodeProfile:
@@ -155,7 +157,7 @@ class _Viewer:
         self._script.setProperty("text", mod_name)
 
         self._scripts_mgr = None
-        self._load_module(mod_name, func_name)
+        self._load_module(mod_name)
 
     @Slot()
     def _cancel_export(self):
@@ -302,17 +304,17 @@ class _Viewer:
         scene_ids = [data["scene_id"] for data in scene_data]
         self._scene_list.setProperty("model", scene_ids)
 
+        # XXX initial funcname parameter need to be taken into account using the same logic
         index = scene_ids.index(cur_scene_id) if cur_scene_id and cur_scene_id in scene_ids else 0
         self._scene_list.setProperty("currentIndex", index)
         self._select_scene(index)
 
-    def _load_module(self, mod_name: str, func_name: Optional[str] = None):
+    def _load_module(self, mod_name: str):
         if self._scripts_mgr is not None:
             self._scripts_mgr.pause()
             del self._scripts_mgr
 
         self._mod_name = mod_name
-        self._func_name = func_name
 
         self._scripts_mgr = ScriptsManager(mod_name)
         self._scripts_mgr.error.connect(self._scriptmgr_error)

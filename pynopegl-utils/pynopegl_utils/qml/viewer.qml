@@ -142,20 +142,26 @@ ApplicationWindow {
 
     SplitView {
         anchors.fill: parent
-        anchors.margins: 5
+        // anchors.margins: 5
 
-        ScrollView {
-            ScrollBar.horizontal.interactive: true
-            ScrollBar.vertical.interactive: true
+        // ScrollView {
+        //     ScrollBar.horizontal.interactive: true
+        //     ScrollBar.vertical.interactive: true
             ColumnLayout {
+                SplitView.fillWidth: false
 
                 Frame {
-                    GridLayout {
+                    Layout.fillWidth: true
+                    Layout.margins: 5
+
+                    contentItem: GridLayout {
                         columns: 2
 
                         Text { text: "Script:" }
                         RowLayout {
-                            TextField { id: script; objectName: "script" }
+                            TextField {
+                                Layout.fillWidth: true
+                                id: script; objectName: "script" }
                             Button {
                                 text: "Open"
                                 background.implicitWidth: 0
@@ -165,18 +171,45 @@ ApplicationWindow {
                         }
 
                         Text { text: "Scene:" }
-                        ComboBox { objectName: "sceneList" }
+                        ComboBox {
+                            Layout.fillWidth: true
+                            objectName: "sceneList"
+                        }
+                    }
+                }
+
+                GroupBox {
+                    title: "Rendering settings"
+                    Layout.fillWidth: true
+                    Layout.margins: 5
+
+                    contentItem: GridLayout {
+                        columns: 2
+
+                        Text { text: "MSAA:" }
+                        ComboBox {
+                            objectName: "samplesList"
+                            Layout.fillWidth: true
+                        }
+
+                        Text { text: "Framerate:" }
+                        ComboBox {
+                            objectName: "framerateList"
+                            Layout.fillWidth: true
+                        }
                     }
                 }
 
                 GroupBox {
                     title: "Build scene options"
                     Layout.fillWidth: true
+                    Layout.margins: 5
                 }
 
                 GroupBox {
                     title: "Live scene controls"
                     Layout.fillWidth: true
+                    Layout.margins: 5
                     // visible: controlList.model.length > 0
 
                     contentItem: ListView {
@@ -207,9 +240,8 @@ ApplicationWindow {
                                     ColorDialog {
                                         id: color_dialog
                                         selectedColor: model.val
-                                        //onRejected: currentColor = color
-                                        onAccepted: model.val = selectedColor
-                                        // options:  ColorDialog.NoButtons
+                                        onSelectedColorChanged: model.val = selectedColor
+                                        options:  ColorDialog.NoButtons
                                     }
                                     text: model.label
                                     palette.button: color_dialog.selectedColor
@@ -247,8 +279,9 @@ ApplicationWindow {
                 GroupBox {
                     title: "Export as video"
                     Layout.fillWidth: true
+                    Layout.margins: 5
 
-                    StackLayout {
+                    contentItem: StackLayout {
                         id: exportQueryStack
 
                         // 0: Export form
@@ -258,7 +291,7 @@ ApplicationWindow {
 
                                 Text { text: "File:" }
                                 RowLayout {
-                                    TextField { id: exportFile; text: "output.mp4" }
+                                    TextField { id: exportFile; text: "output.mp4"; Layout.fillWidth: true }
                                     Button {
                                         text: "Open"
                                         background.implicitWidth: 0
@@ -268,10 +301,10 @@ ApplicationWindow {
                                 }
 
                                 Text { text: "Res:" }
-                                ComboBox { id: resList; objectName: "resList" }
+                                ComboBox { id: resList; objectName: "resList"; Layout.fillWidth: true }
 
                                 Text { text: "Profile:" }
-                                ComboBox { id: profileList; objectName: "profileList" }
+                                ComboBox { id: profileList; objectName: "profileList"; Layout.fillWidth: true}
                             }
                             Button {
                                 text: "Export"
@@ -285,8 +318,14 @@ ApplicationWindow {
                     }
                 }
             }
-        }
+        // }
 
-        Player { objectName: "player" }
+        ColumnLayout {
+            Player {
+                Layout.margins: 5
+                SplitView.fillWidth: true
+                objectName: "player"
+            }
+        }
     }
 }

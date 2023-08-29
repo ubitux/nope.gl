@@ -40,7 +40,6 @@ class NopeGLWidget(QQuickFramebufferObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        # self._scene = None
         self.setMirrorVertically(True)
 
         # Fields used for sync with the renderer
