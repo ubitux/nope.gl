@@ -20,75 +20,20 @@
 # under the License.
 #
 
-import importlib
 import os
 import os.path as op
 import subprocess
 import sys
-from dataclasses import dataclass
-from inspect import getmembers
-from typing import Any, Dict, List, Optional, Tuple
 
 from pynopegl_utils import qml
 from pynopegl_utils.com import query_scene
 from pynopegl_utils.misc import SceneCfg, SceneInfo, get_viewport
-from pynopegl_utils.module import load_script
 from pynopegl_utils.scriptsmgr import ScriptsManager
-from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, QStringListModel, Qt, QUrl, Slot
+from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Qt, QUrl, Slot
 
 import pynopegl as ngl
 
-from .config import Config
-
-
-@dataclass
-class _EncodeProfile:
-    name: str
-    format: str
-    args: List[str]
-
-
-@dataclass
-class _Resolution:
-    name: str
-    rows: int
-
-
-_RES = [
-    _Resolution("144p", 144),
-    _Resolution("240p", 240),
-    _Resolution("360p", 360),
-    _Resolution("480p", 480),
-    _Resolution("720p", 720),
-    _Resolution("1080p", 1080),
-    _Resolution("1440p", 1440),
-    _Resolution("4k", 2048),
-]
-_DEFAULT_RES = 5  # 1080p
-
-_PROFILES = [
-    _EncodeProfile(
-        name="MP4 / H264 4:2:0",
-        format="mp4",
-        args=["-pix_fmt", "yuv420p"],
-    ),
-    _EncodeProfile(
-        name="MP4 / H264 4:4:4",
-        format="mp4",
-        args=["-pix_fmt", "yuv444p"],
-    ),
-    _EncodeProfile(
-        name="MOV / QTRLE (Lossless)",
-        format="mov",
-        args=["-c:v", "qtrle"],
-    ),
-    _EncodeProfile(
-        name="NUT / FFV1 (Lossless)",
-        format="nut",
-        args=["-c:v", "ffv1"],
-    ),
-]
-_DEFAULT_PROFILE = 0
+from .config import ENCODE_PROFILES, RESOLUTIONS, Config
 
 
 class _Viewer:
@@ -97,11 +42,29 @@ class _Viewer:
         self._qml_engine = qml_engine
         app_window = qml_engine.rootObjects()[0]
 
+        self._cancel_export_request = False
+        self._scripts_mgr = None
+        self._scene_data = []
+        self._current_scene_data = None
+
         # Needed so that all the objects found with fincChild() remains accessible
         # https://bugreports.qt.io/browse/QTBUG-116311
         self._window = app_window
 
-        self._cancel_export_request = False
+        self._config = Config()
+        choices = self._config.CHOICES
+
+        script = self._config.get("script")
+        scene = self._config.get("scene")
+        assert script is not None
+        assert scene is not None
+        if len(args) > 1:
+            script = args[1]
+            if len(args) > 2:
+                scene = args[2]
+        self._config.set_script(script)
+        self._config.set_scene(scene)
+
         app_window.exportVideo.connect(self._export_video)
         app_window.cancelExport.connect(self._cancel_export)
 
@@ -113,45 +76,57 @@ class _Viewer:
         self._ngl_widget.livectls_changed.connect(self._livectls_model.reset_data_model)
         self._livectls_model.dataChanged.connect(self._livectl_data_changed)
 
+        self._script = app_window.findChild(QObject, "script")
+        self._script.setProperty("text", script)
+        self._script.editingFinished.connect(self._select_script)
+
+        # The appropriate scene will be selected once the module is loaded
         self._scene_list = app_window.findChild(QObject, "sceneList")
         self._scene_list.activated.connect(self._select_scene)
-
-        self._script = app_window.findChild(QObject, "script")
-        self._script.editingFinished.connect(self._update_module)
 
         self._player = app_window.findChild(QObject, "player")
         self._player.timeChanged.connect(ngl_widget.set_time)
 
         self._export_bar = app_window.findChild(QObject, "exportBar")
 
-        self._player = app_window.findChild(QObject, "player")
+        framerate_names = ["%.5g FPS" % (fps[0] / fps[1]) for fps in choices["framerate"]]
+        framerate = self._config.get("framerate")
+        framerate_index = choices["framerate"].index(framerate)
+        framerate_list = app_window.findChild(QObject, "framerateList")
+        framerate_list.setProperty("model", framerate_names)
+        framerate_list.setProperty("currentIndex", framerate_index)
+        framerate_list.activated.connect(self._select_framerate)
 
-        res_names = [r.name for r in _RES]
-        res_list = app_window.findChild(QObject, "resList")
-        res_list.setProperty("model", res_names)
-        res_list.setProperty("currentIndex", _DEFAULT_RES)
+        export_filename = self._config.get("export_filename")
+        self._export_filename_text = app_window.findChild(QObject, "exportFile")
+        self._export_filename_text.setProperty("text", export_filename)
+        self._export_filename_text.editingFinished.connect(self._set_export_filename)
 
-        profile_names = [p.name for p in _PROFILES]
-        profile_list = app_window.findChild(QObject, "profileList")
-        profile_list.setProperty("model", profile_names)
-        profile_list.setProperty("currentIndex", _DEFAULT_PROFILE)
+        export_res_names = choices["export_res"]
+        export_res = self._config.get("export_res")
+        export_res_index = choices["export_res"].index(export_res)
+        export_res_list = app_window.findChild(QObject, "resList")
+        export_res_list.setProperty("model", export_res_names)
+        export_res_list.setProperty("currentIndex", export_res_index)
+        export_res_list.activated.connect(self._select_export_res)
 
-        samples_names = ["Disabled" if s == 0 else f"x{s}" for s in Config.CHOICES["samples"]]
-        self._samples_index = 0  # XXX load from config
-        self._samples_list = app_window.findChild(QObject, "samplesList")
-        self._samples_list.setProperty("model", samples_names)
-        self._samples_list.setProperty("currentIndex", 0)  # XXX
-        self._samples_list.currentIndexChanged.connect(self._set_samples)
+        export_profile_names = [ENCODE_PROFILES[p].name for p in choices["export_profile"]]
+        export_profile = self._config.get("export_profile")
+        export_profile_index = choices["export_profile"].index(export_profile)
+        export_profile_list = app_window.findChild(QObject, "profileList")
+        export_profile_list.setProperty("model", export_profile_names)
+        export_profile_list.setProperty("currentIndex", export_profile_index)
+        export_profile_list.activated.connect(self._select_export_profile)
 
-        framerate_names = ["%.5g FPS" % (fps[0] / fps[1]) for fps in Config.CHOICES["framerate"]]
-        self._framerate_index = len(framerate_names) - 1  # XXX load from config
-        self._framerate_list = app_window.findChild(QObject, "framerateList")
-        self._framerate_list.setProperty("model", framerate_names)
-        self._framerate_list.setProperty("currentIndex", self._framerate_index)
-        self._framerate_list.currentIndexChanged.connect(self._set_framerate)
+        export_samples_names = ["Disabled" if s == 0 else f"x{s}" for s in choices["export_samples"]]
+        export_samples = self._config.get("export_samples")
+        export_samples_index = choices["export_samples"].index(export_samples)
+        export_samples_list = app_window.findChild(QObject, "samplesList")
+        export_samples_list.setProperty("model", export_samples_names)
+        export_samples_list.setProperty("currentIndex", export_samples_index)
+        export_samples_list.activated.connect(self._select_export_samples)
 
-        self._scene_data = []
-        self._current_scene_data = None
+        self._errorText = app_window.findChild(QObject, "errorText")
 
         try:
             ret = subprocess.run(
@@ -163,39 +138,71 @@ class _Viewer:
         except Exception:
             app_window.disable_export("No working `ffmpeg` command found,\nexport is disabled.")
 
-        if len(args) > 1:
-            mod_name = args[1]
-        else:
-            mod_name = "pynopegl_utils.examples.misc"
-        func_name = args[2] if len(args) > 2 else None
-        self._script.setProperty("text", mod_name)
-
-        self._scripts_mgr = None
-        self._load_module(mod_name)
+        self._select_script()
 
     @Slot()
-    def _set_framerate(self):
-        # XXX save in config
-        self._framerate_index = self._framerate_list.property("currentIndex")
+    def _select_script(self):
+        script = self._script.property("text")
+        script = QUrl(script).path()  # handle the file:// automatically added
+        self._config.set_script(script)
+
+        if self._scripts_mgr is not None:
+            self._scripts_mgr.pause()
+            del self._scripts_mgr
+
+        self._scripts_mgr = ScriptsManager(script)
+        self._scripts_mgr.error.connect(self._set_error)
+        self._scripts_mgr.scriptsChanged.connect(self._scriptmgr_scripts_changed)
+        self._scripts_mgr.start()
+
+    @Slot(int)
+    def _select_scene(self, index):
+        if index < 0 or index >= len(self._scene_data):
+            self._ngl_widget.stop()
+            return
+
+        self._current_scene_data = self._scene_data[index]
+        self._config.set_scene(self._current_scene_data["scene_id"])
+        self._load_current_scene()
+
+    @Slot(int)
+    def _select_framerate(self, index: int):
+        framerate = self._config.CHOICES["framerate"][index]
+        self._config.set_framerate(framerate)
         self._load_current_scene()
 
     @Slot()
-    def _set_samples(self):
-        # XXX save in config
-        self._samples_index = self._samples_list.property("currentIndex")
-        self._load_current_scene()
+    def _set_export_filename(self):
+        filename = self._export_filename_text.property("text")
+        self._config.set_export_filename(filename)
+
+    @Slot(int)
+    def _select_export_res(self, index: int):
+        res = self._config.CHOICES["export_res"][index]
+        self._config.set_export_res(res)
+
+    @Slot(int)
+    def _select_export_profile(self, index: int):
+        profile = self._config.CHOICES["export_profile"][index]
+        self._config.set_export_profile(profile)
+
+    @Slot(int)
+    def _select_export_samples(self, index: int):
+        samples = self._config.CHOICES["export_samples"][index]
+        self._config.set_export_samples(samples)
 
     @Slot()
     def _cancel_export(self):
         self._cancel_export_request = True
 
-    @Slot(str, int, int)
-    def _export_video(self, filename: str, res_index: int, profile_index: int):
+    @Slot(str, int, int, int)
+    def _export_video(self, filename: str, res_index: int, profile_index: int, samples: int):
         scene_data = self._current_scene_data
-        assert scene_data is not None  # XXX ...
+        if scene_data is None:
+            return
 
-        res = _RES[res_index].rows
-        profile = _PROFILES[profile_index]
+        res = RESOLUTIONS[self._config.CHOICES["export_res"][res_index]]
+        profile = ENCODE_PROFILES[self._config.CHOICES["export_profile"][profile_index]]
 
         try:
             scene_info: SceneInfo = scene_data["func"]()
@@ -213,6 +220,7 @@ class _Viewer:
             qml.ngl_widget.livectl_apply_changes(changes)
 
             cfg = self._get_scene_cfg()
+            cfg.samples = samples
 
             ar = scene.aspect_ratio
             height = res
@@ -288,18 +296,13 @@ class _Viewer:
         except Exception as e:
             self._window.error_export(str(e))
 
-    @Slot()
-    def _update_module(self):
-        mod_name = self._script.property("text")
-        mod_name = QUrl(mod_name).path()  # handle the file:// automatically added
-        self._load_module(mod_name)
-
     @Slot(str)
-    def _scriptmgr_error(self, err_str):
-        # TODO add to UI
-        if not err_str:
-            return
-        print(f"ERROR: {err_str}")
+    def _set_error(self, error: str):
+        self._errorText.setProperty("text", error)
+
+        # Useful to have it in the console as well
+        if error:
+            print(error)
 
     @Slot(list)
     def _scriptmgr_scripts_changed(self, scenes):
@@ -307,6 +310,8 @@ class _Viewer:
         scene_data = self._current_scene_data
         if scene_data:
             cur_scene_id = scene_data["scene_id"]
+        else:
+            cur_scene_id = self._config.get("scene")
 
         scene_data = []
         for module_name, sub_scenes in scenes:
@@ -328,67 +333,38 @@ class _Viewer:
         scene_ids = [data["scene_id"] for data in scene_data]
         self._scene_list.setProperty("model", scene_ids)
 
-        # XXX initial funcname parameter need to be taken into account using the same logic
         index = scene_ids.index(cur_scene_id) if cur_scene_id and cur_scene_id in scene_ids else 0
         self._scene_list.setProperty("currentIndex", index)
         self._select_scene(index)
 
-    def _load_module(self, mod_name: str):
-        if self._scripts_mgr is not None:
-            self._scripts_mgr.pause()
-            del self._scripts_mgr
-
-        self._mod_name = mod_name
-
-        self._scripts_mgr = ScriptsManager(mod_name)
-        self._scripts_mgr.error.connect(self._scriptmgr_error)
-        self._scripts_mgr.scriptsChanged.connect(self._scriptmgr_scripts_changed)
-        self._scripts_mgr.start()
-
-    def _get_scene_data(self, index) -> Optional[Dict[str, Any]]:
-        if index < 0 or index >= len(self._scene_data):
-            return None
-        return self._scene_data[index]
-
-    @Slot()
-    def _select_scene(self, index):
-        self._current_scene_data = self._get_scene_data(index)
-        if not self._current_scene_data:
-            self._ngl_widget.stop()
-            return
-
-        self._load_current_scene()
-
     def _get_scene_cfg(self):
-        choices = Config.CHOICES
         return SceneCfg(
-            samples=choices["samples"][self._samples_index],
-            framerate=choices["framerate"][self._framerate_index],
+            framerate=self._config.get("framerate"),
         )
 
     def _load_current_scene(self):
+        scene_data = self._current_scene_data
+        if not scene_data:
+            return
+
+        assert self._scripts_mgr is not None  # module is always loaded if we have the current scene data set
+
         cfg = self._get_scene_cfg()
-
-        # XXX mmmh
-        assert self._scripts_mgr is not None  # module is always loaded before we select a scene
-
-        scene_data = self._current_scene_data  # XXX always set?
 
         self._scripts_mgr.inc_query_count()
         self._scripts_mgr.pause()
-        query_info = query_scene(self._mod_name, scene_data["func"], cfg)
+        query_info = query_scene(scene_data["module_name"], scene_data["func"], cfg)
         self._scripts_mgr.update_filelist(query_info.filelist)
         self._scripts_mgr.update_modulelist(query_info.modulelist)
         self._scripts_mgr.resume()
         self._scripts_mgr.dec_query_count()
 
         if query_info.error is not None:
-            print("ERROR", query_info.error)
-            # self.error.emit(ret["error"])
-            return None
+            self._set_error(query_info.error)
+            return
 
-        # self.error.emit(None)
-        # self.sceneLoaded.emit(ret)
+        self._set_error("")
+
         scene_info: SceneInfo = query_info.ret
         scene = scene_info.scene
 
@@ -397,7 +373,7 @@ class _Viewer:
         # it instead.
         scene_data["live"] = {}
 
-        self._ngl_widget.set_scene(scene, samples=cfg.samples)
+        self._ngl_widget.set_scene(scene)
 
         self._player.setProperty("duration", scene.duration)
         self._player.setProperty("framerate", list(scene.framerate))

@@ -32,7 +32,7 @@ ApplicationWindow {
     minimumWidth: 640
     minimumHeight: 480
 
-    signal exportVideo(string filename, int res, int profile)
+    signal exportVideo(string filename, int res, int profile, int samples)
     signal cancelExport()
 
     FileDialog {
@@ -115,11 +115,11 @@ ApplicationWindow {
         }
     }
 
-    function start_export(filename, res, profile) {
+    function start_export(filename, res, profile, samples) {
         exportBar.value = 0
         exportStack.currentIndex = 0
         exportPopup.visible = true
-        exportVideo(filename, res, profile)
+        exportVideo(filename, res, profile, samples)
     }
 
     function done_export() {
@@ -142,7 +142,6 @@ ApplicationWindow {
 
     SplitView {
         anchors.fill: parent
-        // anchors.margins: 5
 
         // ScrollView {
         //     ScrollBar.horizontal.interactive: true
@@ -186,12 +185,6 @@ ApplicationWindow {
                     contentItem: GridLayout {
                         columns: 2
 
-                        Text { text: "MSAA:" }
-                        ComboBox {
-                            objectName: "samplesList"
-                            Layout.fillWidth: true
-                        }
-
                         Text { text: "Framerate:" }
                         ComboBox {
                             objectName: "framerateList"
@@ -204,13 +197,19 @@ ApplicationWindow {
                     title: "Build scene options"
                     Layout.fillWidth: true
                     Layout.margins: 5
+                    visible: paramList.count > 0
+
+                    contentItem: ListView {
+                        id: paramList
+                        objectName: "paramList"
+                    }
                 }
 
                 GroupBox {
                     title: "Live scene controls"
                     Layout.fillWidth: true
                     Layout.margins: 5
-                    // visible: controlList.model.length > 0
+                    visible: controlList.count > 0
 
                     contentItem: ListView {
                         id: controlList
@@ -241,7 +240,7 @@ ApplicationWindow {
                                         id: color_dialog
                                         selectedColor: model.val
                                         onSelectedColorChanged: model.val = selectedColor
-                                        options:  ColorDialog.NoButtons
+                                        options: ColorDialog.NoButtons
                                     }
                                     text: model.label
                                     palette.button: color_dialog.selectedColor
@@ -259,7 +258,7 @@ ApplicationWindow {
                             DelegateChoice {
                                 roleValue: "text"
                                 RowLayout {
-                                    Text { text: model.label }
+                                    Text { text: model.label + ":" }
                                     TextField {
                                         text: model.val
                                         onEditingFinished: model.val = text
@@ -291,7 +290,7 @@ ApplicationWindow {
 
                                 Text { text: "File:" }
                                 RowLayout {
-                                    TextField { id: exportFile; text: "output.mp4"; Layout.fillWidth: true }
+                                    TextField { id: exportFile; objectName: "exportFile"; Layout.fillWidth: true }
                                     Button {
                                         text: "Open"
                                         background.implicitWidth: 0
@@ -304,12 +303,16 @@ ApplicationWindow {
                                 ComboBox { id: resList; objectName: "resList"; Layout.fillWidth: true }
 
                                 Text { text: "Profile:" }
-                                ComboBox { id: profileList; objectName: "profileList"; Layout.fillWidth: true}
+                                ComboBox { id: profileList; objectName: "profileList"; Layout.fillWidth: true }
+
+                                Text { text: "MSAA:" }
+                                ComboBox { id: samplesList; objectName: "samplesList"; Layout.fillWidth: true }
+
                             }
                             Button {
                                 text: "Export"
                                 Layout.alignment: Qt.AlignHCenter
-                                onClicked: start_export(exportFile.text, resList.currentIndex, profileList.currentIndex)
+                                onClicked: start_export(exportFile.text, resList.currentIndex, profileList.currentIndex, samplesList.currentIndex)
                             }
                         }
 
@@ -325,6 +328,19 @@ ApplicationWindow {
                 Layout.margins: 5
                 SplitView.fillWidth: true
                 objectName: "player"
+            }
+
+            GroupBox {
+                Layout.margins: 5
+                Layout.fillWidth: true
+                // Layout.fillHeight: true
+                visible: errorText.text != ""
+                Text {
+                    objectName: "errorText"
+                    id: errorText
+                    font.family: "monospace"
+                    color: "red"
+                }
             }
         }
     }

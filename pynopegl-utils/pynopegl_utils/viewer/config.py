@@ -23,14 +23,57 @@
 import json
 import os
 import os.path as op
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 from PySide6 import QtCore
+
+RESOLUTIONS = {
+    "144p": 144,
+    "240p": 240,
+    "360p": 360,
+    "480p": 480,
+    "720p": 720,
+    "1080p": 1080,
+    "1440p": 1440,
+    "4k": 2048,
+}
+
+
+@dataclass
+class EncodeProfile:
+    name: str
+    format: str
+    args: List[str]
+
+
+ENCODE_PROFILES = dict(
+    mp4_h264_420=EncodeProfile(
+        name="MP4 / H264 4:2:0",
+        format="mp4",
+        args=["-pix_fmt", "yuv420p"],
+    ),
+    mp4_h264_444=EncodeProfile(
+        name="MP4 / H264 4:4:4",
+        format="mp4",
+        args=["-pix_fmt", "yuv444p"],
+    ),
+    mov_qtrle=EncodeProfile(
+        name="MOV / QTRLE (Lossless)",
+        format="mov",
+        args=["-c:v", "qtrle"],
+    ),
+    nut_ffv1=EncodeProfile(
+        name="NUT / FFV1 (Lossless)",
+        format="nut",
+        args=["-c:v", "ffv1"],
+    ),
+)
 
 
 class Config(QtCore.QObject):
     FILEPATH = op.join(os.environ.get("XDG_DATA_HOME", op.expanduser("~/.local/share")), "nope.gl", "viewer.json")
     CHOICES = {
-        "samples": [0, 2, 4, 8],
         "framerate": [
             (8, 1),
             (12, 1),
@@ -44,29 +87,27 @@ class Config(QtCore.QObject):
             (60000, 1001),
             (60, 1),
         ],
+        "export_res": list(RESOLUTIONS.keys()),
+        "export_profile": list(ENCODE_PROFILES.keys()),
+        "export_samples": [0, 2, 4, 8],
     }
 
-    def __init__(self, module_pkgname):
+    def __init__(self):
         super().__init__()
 
         self._cfg = {
-            "aspect_ratio": (16, 9),
-            "samples": 0,
+            # Script
+            "script": "pynopegl_utils.examples",
+            "scene": "misc.triangle",
+            # Rendering settings
             "framerate": (60, 1),
-            "log_level": "info",
-            "clear_color": (0.0, 0.0, 0.0, 1.0),
-            "backend": "opengl",
             # Export
-            "export_width": 1280,
-            "export_height": 720,
-            "export_filename": op.join(get_nopegl_tempdir(), "ngl-export.mp4"),
-            "export_extra_enc_args": "",
-            # Medias
-            "medias_list": [],
-            "medias_last_dir": QtCore.QDir.currentPath(),
+            "export_filename": op.expanduser("~/nope.mp4"),
+            "export_res": "1080p",
+            "export_profile": "mp4_h264_420",
+            "export_samples": 0,
         }
 
-        self._module_pkgname = module_pkgname
         self._needs_saving = False
 
         if op.exists(self.FILEPATH):
@@ -116,59 +157,23 @@ class Config(QtCore.QObject):
         self._cfg[key] = value
         self._needs_saving = True
 
-    @QtCore.Slot(list)
-    def set_medias_list(self, medias_list):
-        self._set_cfg("medias_list", medias_list)
+    def set_script(self, script: str):
+        self._set_cfg("script", script)
 
-    @QtCore.Slot(str)
-    def set_medias_last_dir(self, last_dir):
-        self._set_cfg("medias_last_dir", last_dir)
+    def set_scene(self, scene: str):
+        self._set_cfg("scene", scene)
 
-    @QtCore.Slot(int)
-    def set_export_width(self, export_width):
-        self._set_cfg("export_width", export_width)
-
-    @QtCore.Slot(int)
-    def set_export_height(self, export_height):
-        self._set_cfg("export_height", export_height)
-
-    @QtCore.Slot(str)
-    def set_export_filename(self, filename):
-        self._set_cfg("export_filename", filename)
-
-    @QtCore.Slot(str)
-    def set_export_extra_enc_args(self, extra_enc_args):
-        self._set_cfg("export_extra_enc_args", extra_enc_args)
-
-    @QtCore.Slot(tuple)
-    def set_aspect_ratio(self, ar):
-        self._set_cfg("aspect_ratio", ar)
-
-    @QtCore.Slot(tuple)
-    def set_frame_rate(self, fr):
+    def set_framerate(self, fr: Tuple[int, int]):
         self._set_cfg("framerate", fr)
 
-    @QtCore.Slot(int)
-    def set_samples(self, samples):
-        self._set_cfg("samples", samples)
+    def set_export_filename(self, filename: str):
+        self._set_cfg("export_filename", filename)
 
-    @QtCore.Slot(tuple)
-    def set_clear_color(self, color):
-        self._set_cfg("clear_color", color)
+    def set_export_res(self, res: int):
+        self._set_cfg("export_res", res)
 
-    @QtCore.Slot(str)
-    def set_log_level(self, level):
-        self._set_cfg("log_level", level)
+    def set_export_profile(self, profile: str):
+        self._set_cfg("export_profile", profile)
 
-    @QtCore.Slot(str)
-    def set_backend(self, backend):
-        self._set_cfg("backend", backend)
-
-    def geometry_changed(self, geometry):
-        self._set_cfg("geometry", geometry)
-
-    @QtCore.Slot(str, str)
-    def scene_changed(self, module_name, scene_name):
-        self._set_cfg("pkg", self._module_pkgname)
-        self._set_cfg("module", module_name)
-        self._set_cfg("scene", scene_name)
+    def set_export_samples(self, samples: int):
+        self._set_cfg("export_samples", samples)
