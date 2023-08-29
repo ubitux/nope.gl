@@ -46,13 +46,14 @@ class NopeGLWidget(QQuickFramebufferObject):
         self.t = 0.0
         self.request_stop = False
         self.request_scene = None
+        self.request_samples = None
         self.livectls_changes = {}
 
     def createRenderer(self):
         self._renderer = _NopeGLRenderer(self.window())
         return self._renderer
 
-    def set_scene(self, scene):
+    def set_scene(self, scene, samples: int = 0):
         if scene:
             model_data = livectl_get_model_data(scene)
         else:
@@ -63,6 +64,7 @@ class NopeGLWidget(QQuickFramebufferObject):
         self.livectls_changed.emit(model_data)
 
         self.request_scene = scene
+        self.request_samples = samples
         self.update()
 
     @QtCore.Slot(float)
@@ -89,6 +91,7 @@ class _NopeGLRenderer(QQuickFramebufferObject.Renderer):
 
         self._request_stop = False
         self._request_scene = None
+        self._request_samples = None
         self._livectls_changes = {}
 
     def createFramebufferObject(self, size):
@@ -105,19 +108,24 @@ class _NopeGLRenderer(QQuickFramebufferObject.Renderer):
 
         if not self._context:
             self._context = ngl.Context()
-            config_gl = ngl.ConfigGL(external=True, external_framebuffer=self._fbo.handle())
-            self._context.configure(
-                ngl.Config(
-                    backend=ngl.Backend.OPENGL,
-                    width=self._fbo.width(),
-                    height=self._fbo.height(),
-                    backend_config=config_gl,
-                )
-            )
+            self._configure_context()
         else:
             self._context.gl_wrap_framebuffer(self._fbo.handle())
 
         return self._fbo
+
+    def _configure_context(self, samples=0):
+        print(f"CONFIGURE {samples=}")
+        config_gl = ngl.ConfigGL(external=True, external_framebuffer=self._fbo.handle())
+        self._context.configure(
+            ngl.Config(
+                backend=ngl.Backend.OPENGL,
+                width=self._fbo.width(),
+                height=self._fbo.height(),
+                backend_config=config_gl,
+                samples=samples,
+            )
+        )
 
     def render(self):
         if not self._context:
@@ -134,6 +142,10 @@ class _NopeGLRenderer(QQuickFramebufferObject.Renderer):
         if self._request_scene:
             assert self._context.set_scene(self._request_scene) == 0
             self._request_scene = None
+
+        if self._request_samples is not None:
+            self._configure_context(samples=self._request_samples)
+            self._request_samples = None
 
         w, h = self._fbo.width(), self._fbo.height()
         self._context.gl_wrap_framebuffer(self._fbo.handle())
@@ -156,10 +168,12 @@ class _NopeGLRenderer(QQuickFramebufferObject.Renderer):
 
         self._request_stop = ngl_widget.request_stop
         self._request_scene = ngl_widget.request_scene
+        self._request_samples = ngl_widget.request_samples
         self._livectls_changes = ngl_widget.livectls_changes
 
         ngl_widget.request_stop = False
         ngl_widget.request_scene = None
+        ngl_widget.request_samples = None
         ngl_widget.livectls_changes = {}
 
 

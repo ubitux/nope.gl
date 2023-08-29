@@ -46,7 +46,6 @@ class _EncodeProfile:
     name: str
     format: str
     args: List[str]
-    fps: Tuple[int, int]
 
 
 @dataclass
@@ -72,25 +71,21 @@ _PROFILES = [
         name="MP4 / H264 4:2:0",
         format="mp4",
         args=["-pix_fmt", "yuv420p"],
-        fps=(60, 1),
     ),
     _EncodeProfile(
         name="MP4 / H264 4:4:4",
         format="mp4",
         args=["-pix_fmt", "yuv444p"],
-        fps=(60, 1),
     ),
     _EncodeProfile(
         name="MOV / QTRLE (Lossless)",
         format="mov",
         args=["-c:v", "qtrle"],
-        fps=(60, 1),
     ),
     _EncodeProfile(
         name="NUT / FFV1 (Lossless)",
         format="nut",
         args=["-c:v", "ffv1"],
-        fps=(60, 1),
     ),
 ]
 _DEFAULT_PROFILE = 0
@@ -130,9 +125,8 @@ class _Viewer:
         self._export_bar = app_window.findChild(QObject, "exportBar")
 
         self._player = app_window.findChild(QObject, "player")
-        self._scene_index = -1
 
-        res_names = [p.name for p in _RES]
+        res_names = [r.name for r in _RES]
         res_list = app_window.findChild(QObject, "resList")
         res_list.setProperty("model", res_names)
         res_list.setProperty("currentIndex", _DEFAULT_RES)
@@ -142,10 +136,30 @@ class _Viewer:
         profile_list.setProperty("model", profile_names)
         profile_list.setProperty("currentIndex", _DEFAULT_PROFILE)
 
+        samples_names = ["Disabled" if s == 0 else f"x{s}" for s in Config.CHOICES["samples"]]
+        self._samples_index = 0  # XXX load from config
+        self._samples_list = app_window.findChild(QObject, "samplesList")
+        self._samples_list.setProperty("model", samples_names)
+        self._samples_list.setProperty("currentIndex", 0)  # XXX
+        self._samples_list.currentIndexChanged.connect(self._set_samples)
+
+        framerate_names = ["%.5g FPS" % (fps[0] / fps[1]) for fps in Config.CHOICES["framerate"]]
+        self._framerate_index = len(framerate_names) - 1  # XXX load from config
+        self._framerate_list = app_window.findChild(QObject, "framerateList")
+        self._framerate_list.setProperty("model", framerate_names)
+        self._framerate_list.setProperty("currentIndex", self._framerate_index)
+        self._framerate_list.currentIndexChanged.connect(self._set_framerate)
+
         self._scene_data = []
+        self._current_scene_data = None
 
         try:
-            ret = subprocess.run(["ffmpeg", "-version"], check=True)
+            ret = subprocess.run(
+                ["ffmpeg", "-version"],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
         except Exception:
             app_window.disable_export("No working `ffmpeg` command found,\nexport is disabled.")
 
@@ -160,18 +174,28 @@ class _Viewer:
         self._load_module(mod_name)
 
     @Slot()
+    def _set_framerate(self):
+        # XXX save in config
+        self._framerate_index = self._framerate_list.property("currentIndex")
+        self._load_current_scene()
+
+    @Slot()
+    def _set_samples(self):
+        # XXX save in config
+        self._samples_index = self._samples_list.property("currentIndex")
+        self._load_current_scene()
+
+    @Slot()
     def _cancel_export(self):
         self._cancel_export_request = True
 
     @Slot(str, int, int)
     def _export_video(self, filename: str, res_index: int, profile_index: int):
-        assert self._scene_index != -1
+        scene_data = self._current_scene_data
+        assert scene_data is not None  # XXX ...
 
         res = _RES[res_index].rows
         profile = _PROFILES[profile_index]
-
-        scene_data = self._get_scene_data(self._scene_index)
-        assert scene_data is not None
 
         try:
             scene_info: SceneInfo = scene_data["func"]()
@@ -188,7 +212,7 @@ class _Viewer:
                 changes.append(entry)
             qml.ngl_widget.livectl_apply_changes(changes)
 
-            cfg = SceneCfg(framerate=profile.fps)
+            cfg = self._get_scene_cfg()
 
             ar = scene.aspect_ratio
             height = res
@@ -280,7 +304,7 @@ class _Viewer:
     @Slot(list)
     def _scriptmgr_scripts_changed(self, scenes):
         cur_scene_id = None
-        scene_data = self._get_scene_data(self._scene_index)
+        scene_data = self._current_scene_data
         if scene_data:
             cur_scene_id = scene_data["scene_id"]
 
@@ -328,17 +352,28 @@ class _Viewer:
 
     @Slot()
     def _select_scene(self, index):
-        self._scene_index = index
-
-        scene_data = self._get_scene_data(index)
-        print(f"select scene {index} -> {scene_data=}")
-        if not scene_data:
+        self._current_scene_data = self._get_scene_data(index)
+        if not self._current_scene_data:
             self._ngl_widget.stop()
             return
 
-        cfg = SceneCfg()
+        self._load_current_scene()
 
+    def _get_scene_cfg(self):
+        choices = Config.CHOICES
+        return SceneCfg(
+            samples=choices["samples"][self._samples_index],
+            framerate=choices["framerate"][self._framerate_index],
+        )
+
+    def _load_current_scene(self):
+        cfg = self._get_scene_cfg()
+
+        # XXX mmmh
         assert self._scripts_mgr is not None  # module is always loaded before we select a scene
+
+        scene_data = self._current_scene_data  # XXX always set?
+
         self._scripts_mgr.inc_query_count()
         self._scripts_mgr.pause()
         query_info = query_scene(self._mod_name, scene_data["func"], cfg)
@@ -362,7 +397,7 @@ class _Viewer:
         # it instead.
         scene_data["live"] = {}
 
-        self._ngl_widget.set_scene(scene)
+        self._ngl_widget.set_scene(scene, samples=cfg.samples)
 
         self._player.setProperty("duration", scene.duration)
         self._player.setProperty("framerate", list(scene.framerate))
@@ -370,7 +405,7 @@ class _Viewer:
 
     @Slot()
     def _livectl_data_changed(self, top_left, bottom_right):
-        scene_data = self._get_scene_data(self._scene_index)
+        scene_data = self._current_scene_data
         assert scene_data is not None
 
         for row in range(top_left.row(), bottom_right.row() + 1):
