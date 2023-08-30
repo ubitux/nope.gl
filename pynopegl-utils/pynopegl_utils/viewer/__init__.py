@@ -35,7 +35,7 @@ from PySide6.QtGui import QColor
 
 import pynopegl as ngl
 
-from .config import ENCODE_PROFILES, RESOLUTIONS, Config
+from pynopegl_utils.viewer.config import ENCODE_PROFILES, RESOLUTIONS, Config
 
 
 class _Viewer:
