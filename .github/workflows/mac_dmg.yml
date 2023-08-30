@@ -1,0 +1,65 @@
+# Warning: this name must stay in sync with the badges referenced in the README
+name: 'build Mac DMG'
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+
+jobs:
+  macos:
+
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ffmpeg_version: [5.0.1]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        brew install python3 curl pkg-config nasm create-dmg
+
+    - name: Setup venv
+      run: |
+        ./configure.py
+
+    - name: Get ffmpeg source code
+      run: |
+        wget https://ffmpeg.org/releases/ffmpeg-${{ matrix.ffmpeg_version }}.tar.xz
+        tar -xf ffmpeg-${{ matrix.ffmpeg_version }}.tar.xz
+
+    - name: Compile ffmpeg source with the ndk toolchain for Android & install it to a specific directory
+      run: |
+        cd ffmpeg-${{ matrix.ffmpeg_version }}
+
+        ./configure \
+        --disable-doc --disable-static --enable-rpath --enable-shared --enable-zlib \
+        --prefix=$(pwd)/../venv/
+        make install -j$(($(nproc)+1))
+
+    - name: Build
+      run: |
+        make
+
+    - name: Pyinstaller
+      run: |
+        . venv/bin/ngli-activate
+        pip install pyinstaller
+        pyinstaller \
+            --collect-all pynopegl_utils \
+            --add-binary venv/bin/ffmpeg:bin \
+            --add-binary venv/bin/ffprobe:bin \
+            --windowed \
+            nope.viewer.py
+        create-dmg nope.viewer.dmg dist/nope.viewer.app
+      
+    - name: Upload DMG
+      uses: actions/upload-artifact@v3
+      with:
+        name: nope.viewer.dmg
+        path: nope.viewer.dmg
+
