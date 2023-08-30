@@ -202,6 +202,78 @@ ApplicationWindow {
                     contentItem: ListView {
                         id: paramList
                         objectName: "paramList"
+
+                        implicitWidth: contentWidth
+                        implicitHeight: contentHeight
+
+                        delegate: DelegateChooser {
+                            role: "type"
+                            DelegateChoice {
+                                roleValue: "irange"
+                                RowLayout {
+                                    Text { text: model.label }
+                                    Slider {
+                                        snapMode: Slider.SnapAlways
+                                        stepSize: 1
+                                        from: model.min
+                                        to: model.max
+                                        value: model.val
+                                        onMoved: model.val = value
+                                    }
+                                    Text { text: model.val }
+                                }
+                            }
+                            DelegateChoice {
+                                roleValue: "range"
+                                RowLayout {
+                                    Text { text: model.label }
+                                    Slider {
+                                        snapMode: Slider.SnapAlways
+                                        stepSize: 1.0
+                                        from: model.min
+                                        to: model.max
+                                        value: model.val
+                                        onMoved: model.val = value
+                                    }
+                                    Text { text: model.val.toFixed(3) }
+                                }
+                            }
+                            // TODO vector
+                            DelegateChoice {
+                                roleValue: "color"
+                                Button {
+                                    ColorDialog {
+                                        id: color_dialog
+                                        selectedColor: model.val
+                                        onSelectedColorChanged: model.val = selectedColor
+                                        options: ColorDialog.NoButtons
+                                    }
+                                    text: model.label
+                                    palette.button: color_dialog.selectedColor
+                                    onClicked: color_dialog.open()
+                                }
+                            }
+                            DelegateChoice {
+                                roleValue: "bool"
+                                Switch {
+                                    checked: model.val
+                                    onToggled: model.val = checked
+                                    text: model.label
+                                }
+                            }
+                            // TODO file
+                            // TODO list
+                            DelegateChoice {
+                                roleValue: "text"
+                                RowLayout {
+                                    Text { text: model.label + ":" }
+                                    TextField {
+                                        text: model.val
+                                        onEditingFinished: model.val = text
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -230,7 +302,7 @@ ApplicationWindow {
                                         value: model.val
                                         onMoved: model.val = value
                                     }
-                                    Text { text: model.val }
+                                    Text { text: model.val.toFixed(3) }
                                 }
                             }
                             DelegateChoice {

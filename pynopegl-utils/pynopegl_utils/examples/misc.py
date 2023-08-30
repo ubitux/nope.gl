@@ -689,17 +689,10 @@ def scopes(cfg, scene0="media", scene1="waveform/parade", scene2="waveform/mixed
     return autogrid_simple(children)
 
 
-@scene(
-    controls=dict(
-        rotate_angle=scene.Range(range=[0, 360]),
-        color0=scene.Color(),
-        color1=scene.Color(),
-        text=scene.Text(),
-        linear=scene.Bool(),
-    )
-)
+@scene(controls=dict(circle=scene.Bool()))
 def livechange_test(
     cfg,
+    circle=False,
     rotate_angle=15,
     color_tl=(1, 0.5, 0, 1),
     color_tr=(0, 1, 0, 1),
@@ -733,7 +726,7 @@ def livechange_test(
         color_br=ucolor_br,
         color_bl=ucolor_bl,
         linear=ulinear,
-        geometry=ngl.Quad(),
+        geometry=ngl.Circle(radius=0.8, npoints=128) if circle else ngl.Quad(),
     )
     scene = ngl.Group(children=(render, text_node))
     scene = ngl.Rotate(scene, angle=urotate)

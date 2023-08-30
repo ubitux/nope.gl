@@ -24,12 +24,14 @@ import os
 import os.path as op
 import subprocess
 import sys
+from typing import Any, Dict, List, Optional
 
 from pynopegl_utils import qml
 from pynopegl_utils.com import query_scene
 from pynopegl_utils.misc import SceneCfg, SceneInfo, get_viewport
 from pynopegl_utils.scriptsmgr import ScriptsManager
 from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Qt, QUrl, Slot
+from PySide6.QtGui import QColor
 
 import pynopegl as ngl
 
@@ -68,13 +70,21 @@ class _Viewer:
         app_window.exportVideo.connect(self._export_video)
         app_window.cancelExport.connect(self._cancel_export)
 
+        self._params_model = UIElementsModel2()
+
+        # XXX should we have a trigger/apply button for those?
+        self._params_model.dataChanged.connect(self._params_data_changed)
+
+        self._params_listview = app_window.findChild(QObject, "paramList")
+        self._params_listview.setProperty("model", self._params_model)
+
         self._livectls_model = UIElementsModel()
-        self._list_view = app_window.findChild(QObject, "controlList")
-        self._list_view.setProperty("model", self._livectls_model)
+        self._livectls_model.dataChanged.connect(self._livectl_data_changed)
+        self._livectls_listview = app_window.findChild(QObject, "controlList")
+        self._livectls_listview.setProperty("model", self._livectls_model)
 
         self._ngl_widget = ngl_widget
         self._ngl_widget.livectls_changed.connect(self._livectls_model.reset_data_model)
-        self._livectls_model.dataChanged.connect(self._livectl_data_changed)
 
         self._script = app_window.findChild(QObject, "script")
         self._script.setProperty("text", script)
@@ -161,8 +171,12 @@ class _Viewer:
             self._ngl_widget.stop()
             return
 
-        self._current_scene_data = self._scene_data[index]
-        self._config.set_scene(self._current_scene_data["scene_id"])
+        scene_data = self._scene_data[index]
+        self._current_scene_data = scene_data
+        self._config.set_scene(scene_data["scene_id"])
+
+        self._set_widgets_from_specs(scene_data["func"].widgets_specs)
+
         self._load_current_scene()
 
     @Slot(int)
@@ -204,8 +218,11 @@ class _Viewer:
         res = RESOLUTIONS[self._config.CHOICES["export_res"][res_index]]
         profile = ENCODE_PROFILES[self._config.CHOICES["export_profile"][profile_index]]
 
+        extra_args = self._get_scene_building_extra_args()
+
+        # XXX: reduce the scope of the try-except?
         try:
-            scene_info: SceneInfo = scene_data["func"]()
+            scene_info: SceneInfo = scene_data["func"](**extra_args)
             scene = scene_info.scene
 
             # Apply user live changes
@@ -297,7 +314,10 @@ class _Viewer:
             self._window.error_export(str(e))
 
     @Slot(str)
-    def _set_error(self, error: str):
+    def _set_error(self, error: Optional[str]):
+        if error is None:
+            error = ""
+
         self._errorText.setProperty("text", error)
 
         # Useful to have it in the console as well
@@ -342,6 +362,71 @@ class _Viewer:
             framerate=self._config.get("framerate"),
         )
 
+    def _get_scene_building_extra_args(self) -> Dict[str, Any]:
+        extra_args = {}
+        for i in range(self._params_model.rowCount()):
+            data = self._params_model.get_row(i)
+
+            if data["type"] == "color":
+                val = QColor.getRgbF(data["val"])[:3]
+            else:
+                val = data["val"]
+
+            extra_args[data["label"]] = val
+
+        return extra_args
+
+    def _set_widgets_from_specs(self, widgets_specs):
+        scene_data = self._current_scene_data
+        assert scene_data is not None
+
+        widgets_specs = scene_data["func"].widgets_specs
+
+        _WIDGET_TYPES_MODEL_MAP = dict(
+            Range="range",
+            # Vector="vector",
+            Color="color",
+            Bool="bool",
+            # File="file",
+            # List="list",
+            Text="text",
+        )
+
+        model_data = []
+        for key, default, ctl_id, ctl_data in widgets_specs:
+            type_ = _WIDGET_TYPES_MODEL_MAP.get(ctl_id)
+            if type_ is None:
+                print(f"widget type {type_} is not yet supported")
+                continue
+
+            data = dict(
+                type=type_,
+                label=key,
+                val=default,
+            )
+
+            if ctl_id == "Range":
+                data["min"] = ctl_data["range"][0]
+                data["max"] = ctl_data["range"][1]
+                data["step"] = 1 / ctl_data["unit_base"]
+                print(data["step"])
+            elif ctl_id == "Color":
+                data["val"] = QColor.fromRgbF(*default)
+
+            # TODO
+            elif ctl_id == "List":
+                # data["choices"] = ctl_data["choices"]
+                pass
+            elif ctl_id == "File":
+                # data["filter"] = ctl_data["filter"]
+                pass
+            elif ctl_id == "Vector":
+                pass
+
+            model_data.append(data)
+
+        self._params_model.reset_data_model(model_data)
+
     def _load_current_scene(self):
         scene_data = self._current_scene_data
         if not scene_data:
@@ -351,19 +436,19 @@ class _Viewer:
 
         cfg = self._get_scene_cfg()
 
+        extra_args = self._get_scene_building_extra_args()
+
         self._scripts_mgr.inc_query_count()
         self._scripts_mgr.pause()
-        query_info = query_scene(scene_data["module_name"], scene_data["func"], cfg)
+        query_info = query_scene(scene_data["module_name"], scene_data["func"], cfg, extra_args)
         self._scripts_mgr.update_filelist(query_info.filelist)
         self._scripts_mgr.update_modulelist(query_info.modulelist)
         self._scripts_mgr.resume()
         self._scripts_mgr.dec_query_count()
 
-        if query_info.error is not None:
-            self._set_error(query_info.error)
+        self._set_error(query_info.error)
+        if query_info.error:
             return
-
-        self._set_error("")
 
         scene_info: SceneInfo = query_info.ret
         scene = scene_info.scene
@@ -378,6 +463,10 @@ class _Viewer:
         self._player.setProperty("duration", scene.duration)
         self._player.setProperty("framerate", list(scene.framerate))
         self._player.setProperty("aspect", list(scene.aspect_ratio))
+
+    @Slot()
+    def _params_data_changed(self, top_left, bottom_right):
+        self._load_current_scene()
 
     @Slot()
     def _livectl_data_changed(self, top_left, bottom_right):
@@ -395,6 +484,44 @@ class _Viewer:
 
 
 class UIElementsModel(QAbstractListModel):
+    _roles_map = {Qt.UserRole + i: s for i, s in enumerate(("type", "label", "val", "min", "max"))}
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._data = []
+
+    @Slot(object)
+    def reset_data_model(self, data):
+        self.beginResetModel()
+        self._data = data
+        self.endResetModel()
+
+    def get_row(self, row):
+        return self._data[row]
+
+    def roleNames(self):
+        names = super().roleNames()
+        names.update({k: v.encode() for k, v in self._roles_map.items()})
+        return names
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self._data)
+
+    def data(self, index, role: int):
+        if not index.isValid():
+            return None
+        return self._data[index.row()].get(self._roles_map[role])
+
+    def setData(self, index, value, role):
+        if not index.isValid():
+            return False
+        item = self._data[index.row()]
+        item[self._roles_map[role]] = value
+        self.dataChanged.emit(index, index)
+        return True
+
+
+class UIElementsModel2(QAbstractListModel):
     _roles_map = {Qt.UserRole + i: s for i, s in enumerate(("type", "label", "val", "min", "max"))}
 
     def __init__(self, parent=None):
