@@ -1,0 +1,14 @@
+name: Second
+
+on:
+  workflow_run:
+    workflows: ["First job"]
+    types: [completed]
+
+
+jobs:
+  second_job:
+    name: "Allez va niquer ta darone"
+    runs-on: ubuntu-latest
+    steps:
+      - run: env

@@ -1,0 +1,11 @@
+name: First job
+
+on:
+  - pull_request
+
+jobs:
+  first_step:
+    name: "First step"
+    runs-on: ubuntu-latest
+    steps:
+      - run: env
