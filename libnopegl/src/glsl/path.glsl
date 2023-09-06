@@ -43,7 +43,11 @@ vec4 get_path_color(vec2 dist, vec4 color, vec4 outline, vec4 glow, float blur)
     float outline_width = outline.a;
 
     float fill_d = dist.x;
-    float stroke_d = outline_width - abs(dist.y);
+#if 0
+    float stroke_d = outline_width / 2.0 - abs(dist.y);
+#else
+    float stroke_d = outline_width/4.0 - abs(dist.y + outline_width / 4.0);
+#endif
 
     float d = max(fill_d, stroke_d);
     float a = border(d, blur);
