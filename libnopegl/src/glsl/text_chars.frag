@@ -45,5 +45,5 @@ void main()
      * fill and the outline.
      */
     vec2 dist = vec2(texture(tex, clamp_uv).r);
-    ngl_out_color = get_path_color(dist, color, outline, glow, blur);
+    ngl_out_color = get_path_color(dist, color, outline, outline_color, glow, blur);
 }

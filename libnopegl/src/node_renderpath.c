@@ -75,6 +75,8 @@ struct renderpath_opts {
     float outline;
     struct ngl_node *outline_color_node;
     float outline_color[3];
+    struct ngl_node *outline_opacity_node;
+    float outline_opacity;
     struct ngl_node *glow_node;
     float glow;
     struct ngl_node *glow_color_node;
@@ -118,6 +120,9 @@ static const struct node_param renderpath_params[] = {
     {"outline_color", NGLI_PARAM_TYPE_VEC3, OFFSET(outline_color_node), {.vec={1.f, .7f, 0.f}},
                      .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
                      .desc=NGLI_DOCSTRING("path outline color")},
+    {"outline_opacity", NGLI_PARAM_TYPE_F32, OFFSET(outline_opacity_node), {.f32=1.f},
+                     .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
+                     .desc=NGLI_DOCSTRING("path outline opacity")},
     {"glow",         NGLI_PARAM_TYPE_F32, OFFSET(glow_node),
                      .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
                      .desc=NGLI_DOCSTRING("path glow width")},
@@ -353,6 +358,7 @@ static int renderpath_prepare(struct ngl_node *node)
         {.name="opacity",           .type=NGLI_TYPE_F32,   .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->opacity_node,       &o->opacity)},
         {.name="outline",           .type=NGLI_TYPE_F32,   .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->outline_node,       &o->outline)},
         {.name="outline_color",     .type=NGLI_TYPE_VEC3,  .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->outline_color_node, &o->outline_color)},
+        {.name="outline_opacity",   .type=NGLI_TYPE_F32,   .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->outline_opacity_node, &o->outline_opacity)},
         {.name="glow",              .type=NGLI_TYPE_F32,   .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->glow_node,          &o->glow)},
         {.name="glow_color",        .type=NGLI_TYPE_VEC3,  .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->glow_color_node,    o->glow_color)},
         {.name="blur",              .type=NGLI_TYPE_F32,   .stage=NGLI_PROGRAM_SHADER_FRAG, .data=ngli_node_get_data_ptr(o->blur_node,          &o->blur)},

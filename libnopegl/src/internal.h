@@ -479,6 +479,8 @@ struct texteffect_opts {
     float outline;
     struct ngl_node *outline_color_node;
     float outline_color[3];
+    struct ngl_node *outline_opacity_node;
+    float outline_opacity;
     struct ngl_node *glow_node;
     float glow;
     struct ngl_node *glow_color_node;

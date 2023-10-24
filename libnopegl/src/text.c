@@ -170,6 +170,7 @@ static void fill_default_data_buffers(struct text *s, size_t nb_chars)
     const struct default_data default_data = {
         .transform = NGLI_MAT4_IDENTITY,
         .color     = {NGLI_ARG_VEC3(s->config.defaults.color), s->config.defaults.opacity},
+        // .outline_
         .outline   = {1.f, .7f, 0.f, 0.f},
         .glow      = {1.f, 1.f, 1.f, 0.f},
         .blur      = 0.f,
