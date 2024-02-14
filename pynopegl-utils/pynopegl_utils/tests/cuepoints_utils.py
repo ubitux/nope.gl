@@ -51,8 +51,8 @@ def get_points_nodes(
     text_size: Tuple[float, float] = (0.1, 0.1),
 ):
     g = ngl.Group(label="Debug circles")
-    circle = ngl.Circle(radius=radius)
-    circle_draw = ngl.DrawColor(color, geometry=circle)
+    box = [-radius / 2, -radius / 2, radius * 2, radius * 2]
+    circle_draw = ngl.DrawColor(color, box=box, shape=ngl.ShapeCircle(), blending="src_over")
     box = (-1.0, -1.0, text_size[0], text_size[1])
     for pos_name, position in points.items():
         text = ngl.Text(pos_name, box=box, bg_opacity=0, valign="top")

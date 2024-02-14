@@ -13,11 +13,10 @@ def playback_speed(cfg: ngl.SceneCfg, speed=1.0):
     cfg.duration = rush_duration / speed
     cfg.aspect_ratio = (m0.width, m0.height)
 
-    q = ngl.Quad((-0.5, -0.5, 0), (1, 0, 0), (0, 1, 0))
     time_animkf = [ngl.AnimKeyFrameFloat(0, initial_seek), ngl.AnimKeyFrameFloat(cfg.duration, media_duration)]
     m = ngl.Media(m0.filename, time_anim=ngl.AnimatedTime(time_animkf))
     t = ngl.Texture2D(data_src=m)
-    return ngl.DrawTexture(t, geometry=q)
+    return ngl.DrawTexture(t, box=(-0.5, -0.5, 1.0, 1.0))
 
 
 @ngl.scene()

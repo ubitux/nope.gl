@@ -11,5 +11,5 @@ def animated_rotate(cfg: ngl.SceneCfg):
         ngl.AnimKeyFrameFloat(cfg.duration, 360),
     ]
 
-    scene = ngl.DrawColor(geometry=ngl.Quad())
+    scene = ngl.DrawColor(shape=ngl.ShapeRectangle(size=(0.5, 0.5)), blending="src_over")
     return ngl.Rotate(scene, angle=ngl.AnimatedFloat(animkf))

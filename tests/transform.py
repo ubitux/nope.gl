@@ -29,8 +29,7 @@ import pynopegl as ngl
 
 
 def _transform_shape(w=0.75, h=0.45):
-    geometry = ngl.Quad(corner=(-w / 2.0, -h / 2.0, 0), width=(w, 0, 0), height=(0, h, 0))
-    return ngl.DrawColor(COLORS.rose, geometry=geometry)
+    return ngl.DrawColor(COLORS.rose, box=(-w / 2.0, -h / 2.0, w, h))
 
 
 @test_fingerprint(width=320, height=320)
@@ -66,9 +65,8 @@ def transform_animated_camera(cfg: ngl.SceneCfg):
         # fmt: on
     )
 
-    quad = ngl.Quad((-0.5, -0.5, 0), (1, 0, 0), (0, 1, 0))
     for color, vector in elems:
-        node = ngl.DrawColor(color, geometry=quad)
+        node = ngl.DrawColor(color, box=(-0.5, -0.5, 1.0, 1.0))
         if vector:
             node = ngl.Translate(node, vector=vector)
         g.add_children(node)
@@ -103,7 +101,9 @@ def transform_eye_camera(cfg: ngl.SceneCfg):
     cfg.duration = 3.0
     cfg.aspect_ratio = (1, 1)
 
-    node = ngl.DrawGradient4(geometry=ngl.Circle(radius=0.7, npoints=128))
+    size = 0.7
+    box = (-size / 2, -size / 2, size * 2, size * 2)
+    node = ngl.DrawGradient4(box=box, shape=ngl.ShapeCircle(), blending="src_over")
     animkf = [
         ngl.AnimKeyFrameVec3(0, (0, -0.5, 0)),
         ngl.AnimKeyFrameVec3(cfg.duration / 2, (0, 1, 0)),
@@ -363,7 +363,7 @@ def transform_shared_anim(cfg: ngl.SceneCfg):
     cfg.duration = 6
 
     # Duplicate the same shape at different positions
-    shape = ngl.DrawColor(geometry=ngl.Circle(radius=1 / 3, npoints=5))
+    shape = ngl.DrawColor(shape=ngl.ShapeNGon(radius=1 / 3, n=5), blending="src_over")
     shape0 = ngl.Translate(shape, vector=(-0.5, 0.5, 0))
     shape1 = ngl.Translate(shape, vector=(-0.5, -0.5, 0))
 

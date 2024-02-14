@@ -31,6 +31,7 @@
 #include "helper_misc_utils_glsl.h"
 #include "helper_noise_glsl.h"
 #include "helper_oklab_glsl.h"
+#include "helper_shapes_glsl.h"
 #include "helper_srgb_glsl.h"
 
 struct filterschain {
@@ -93,6 +94,7 @@ static const struct {
     {NGLI_FILTER_HELPER_MISC_UTILS, &helper_misc_utils_glsl},
     {NGLI_FILTER_HELPER_NOISE, &helper_noise_glsl},
     {NGLI_FILTER_HELPER_OKLAB, &helper_oklab_glsl},
+    {NGLI_FILTER_HELPER_SHAPES, &helper_shapes_glsl},
     {NGLI_FILTER_HELPER_SRGB, &helper_srgb_glsl},
 };
 

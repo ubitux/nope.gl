@@ -346,6 +346,9 @@ foreach backend : backends
   endif
 
   tests_shape = [
+    'aa_circle',
+    'aa_triangle',
+    'aa_rect',
     'precision_iovar',
     'triangle',
     'triangle_cull_back',
@@ -361,7 +364,6 @@ foreach backend : backends
     'geometry_normals',
     'geometry_indices',
     'geometry_normals_indices',
-    'geometry_with_drawother',
     'morphing',
     'cropboard',
     'cropboard_indices',

@@ -354,6 +354,20 @@
         "desc": "exclusive or between this node and the destination"
       }
     ],
+    "display_layout": [
+      {
+        "name": "stretch",
+        "desc": "stretch XXX"
+      },
+      {
+        "name": "fit",
+        "desc": "fit XXX"
+      },
+      {
+        "name": "cover",
+        "desc": "cover XXX"
+      }
+    ],
     "gradient_mode": [
       {
         "name": "ramp",
@@ -1907,11 +1921,33 @@
           "desc": "define how this node and the current frame buffer are blending together"
         },
         {
-          "name": "geometry",
-          "type": "node",
-          "node_types": ["Circle", "Geometry", "Quad", "Triangle"],
+          "name": "box",
+          "type": "vec4",
+          "default": [-1.000000,-1.000000,2.000000,2.000000],
           "flags": [],
-          "desc": "geometry to be rasterized"
+          "desc": "geometry box relative to screen (x, y, width, height)"
+        },
+        {
+          "name": "box_resize",
+          "type": "node",
+          "node_types": ["Texture2D"],
+          "flags": [],
+          "desc": "if set, `layout` will be honored by resizing the geometry to match the target"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "stretch",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "content aspect layout policy"
+        },
+        {
+          "name": "shape",
+          "type": "node",
+          "node_types": ["ShapeCircle", "ShapeNGon", "ShapeRectangle", "ShapeTriangle", "Rotate", "RotateQuat", "Transform", "Translate", "Scale", "Skew"],
+          "flags": [],
+          "desc": "shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)"
         },
         {
           "name": "filters",
@@ -1948,11 +1984,33 @@
           "desc": "define how this node and the current frame buffer are blending together"
         },
         {
-          "name": "geometry",
-          "type": "node",
-          "node_types": ["Circle", "Geometry", "Quad", "Triangle"],
+          "name": "box",
+          "type": "vec4",
+          "default": [-1.000000,-1.000000,2.000000,2.000000],
           "flags": [],
-          "desc": "geometry to be rasterized"
+          "desc": "geometry box relative to screen (x, y, width, height)"
+        },
+        {
+          "name": "box_resize",
+          "type": "node",
+          "node_types": ["Texture2D"],
+          "flags": [],
+          "desc": "if set, `layout` will be honored by resizing the geometry to match the target"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "stretch",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "content aspect layout policy"
+        },
+        {
+          "name": "shape",
+          "type": "node",
+          "node_types": ["ShapeCircle", "ShapeNGon", "ShapeRectangle", "ShapeTriangle", "Rotate", "RotateQuat", "Transform", "Translate", "Scale", "Skew"],
+          "flags": [],
+          "desc": "shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)"
         },
         {
           "name": "filters",
@@ -2032,11 +2090,33 @@
           "desc": "define how this node and the current frame buffer are blending together"
         },
         {
-          "name": "geometry",
-          "type": "node",
-          "node_types": ["Circle", "Geometry", "Quad", "Triangle"],
+          "name": "box",
+          "type": "vec4",
+          "default": [-1.000000,-1.000000,2.000000,2.000000],
           "flags": [],
-          "desc": "geometry to be rasterized"
+          "desc": "geometry box relative to screen (x, y, width, height)"
+        },
+        {
+          "name": "box_resize",
+          "type": "node",
+          "node_types": ["Texture2D"],
+          "flags": [],
+          "desc": "if set, `layout` will be honored by resizing the geometry to match the target"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "stretch",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "content aspect layout policy"
+        },
+        {
+          "name": "shape",
+          "type": "node",
+          "node_types": ["ShapeCircle", "ShapeNGon", "ShapeRectangle", "ShapeTriangle", "Rotate", "RotateQuat", "Transform", "Translate", "Scale", "Skew"],
+          "flags": [],
+          "desc": "shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)"
         },
         {
           "name": "filters",
@@ -2122,11 +2202,33 @@
           "desc": "define how this node and the current frame buffer are blending together"
         },
         {
-          "name": "geometry",
-          "type": "node",
-          "node_types": ["Circle", "Geometry", "Quad", "Triangle"],
+          "name": "box",
+          "type": "vec4",
+          "default": [-1.000000,-1.000000,2.000000,2.000000],
           "flags": [],
-          "desc": "geometry to be rasterized"
+          "desc": "geometry box relative to screen (x, y, width, height)"
+        },
+        {
+          "name": "box_resize",
+          "type": "node",
+          "node_types": ["Texture2D"],
+          "flags": [],
+          "desc": "if set, `layout` will be honored by resizing the geometry to match the target"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "stretch",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "content aspect layout policy"
+        },
+        {
+          "name": "shape",
+          "type": "node",
+          "node_types": ["ShapeCircle", "ShapeNGon", "ShapeRectangle", "ShapeTriangle", "Rotate", "RotateQuat", "Transform", "Translate", "Scale", "Skew"],
+          "flags": [],
+          "desc": "shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)"
         },
         {
           "name": "filters",
@@ -2164,11 +2266,33 @@
           "desc": "define how this node and the current frame buffer are blending together"
         },
         {
-          "name": "geometry",
-          "type": "node",
-          "node_types": ["Circle", "Geometry", "Quad", "Triangle"],
+          "name": "box",
+          "type": "vec4",
+          "default": [-1.000000,-1.000000,2.000000,2.000000],
           "flags": [],
-          "desc": "geometry to be rasterized"
+          "desc": "geometry box relative to screen (x, y, width, height)"
+        },
+        {
+          "name": "box_resize",
+          "type": "node",
+          "node_types": ["Texture2D"],
+          "flags": [],
+          "desc": "if set, `layout` will be honored by resizing the geometry to match the target"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "stretch",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "content aspect layout policy"
+        },
+        {
+          "name": "shape",
+          "type": "node",
+          "node_types": ["ShapeCircle", "ShapeNGon", "ShapeRectangle", "ShapeTriangle", "Rotate", "RotateQuat", "Transform", "Translate", "Scale", "Skew"],
+          "flags": [],
+          "desc": "shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)"
         },
         {
           "name": "filters",
@@ -2248,11 +2372,33 @@
           "desc": "define how this node and the current frame buffer are blending together"
         },
         {
-          "name": "geometry",
-          "type": "node",
-          "node_types": ["Circle", "Geometry", "Quad", "Triangle"],
+          "name": "box",
+          "type": "vec4",
+          "default": [-1.000000,-1.000000,2.000000,2.000000],
           "flags": [],
-          "desc": "geometry to be rasterized"
+          "desc": "geometry box relative to screen (x, y, width, height)"
+        },
+        {
+          "name": "box_resize",
+          "type": "node",
+          "node_types": ["Texture2D"],
+          "flags": [],
+          "desc": "if set, `layout` will be honored by resizing the geometry to match the target"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "stretch",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "content aspect layout policy"
+        },
+        {
+          "name": "shape",
+          "type": "node",
+          "node_types": ["ShapeCircle", "ShapeNGon", "ShapeRectangle", "ShapeTriangle", "Rotate", "RotateQuat", "Transform", "Translate", "Scale", "Skew"],
+          "flags": [],
+          "desc": "shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)"
         },
         {
           "name": "filters",
@@ -2378,11 +2524,33 @@
           "desc": "define how this node and the current frame buffer are blending together"
         },
         {
-          "name": "geometry",
-          "type": "node",
-          "node_types": ["Circle", "Geometry", "Quad", "Triangle"],
+          "name": "box",
+          "type": "vec4",
+          "default": [-1.000000,-1.000000,2.000000,2.000000],
           "flags": [],
-          "desc": "geometry to be rasterized"
+          "desc": "geometry box relative to screen (x, y, width, height)"
+        },
+        {
+          "name": "box_resize",
+          "type": "node",
+          "node_types": ["Texture2D"],
+          "flags": [],
+          "desc": "if set, `layout` will be honored by resizing the geometry to match the target"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "stretch",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "content aspect layout policy"
+        },
+        {
+          "name": "shape",
+          "type": "node",
+          "node_types": ["ShapeCircle", "ShapeNGon", "ShapeRectangle", "ShapeTriangle", "Rotate", "RotateQuat", "Transform", "Translate", "Scale", "Skew"],
+          "flags": [],
+          "desc": "shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)"
         },
         {
           "name": "filters",
@@ -2420,11 +2588,33 @@
           "desc": "define how this node and the current frame buffer are blending together"
         },
         {
-          "name": "geometry",
-          "type": "node",
-          "node_types": ["Circle", "Geometry", "Quad", "Triangle"],
+          "name": "box",
+          "type": "vec4",
+          "default": [-1.000000,-1.000000,2.000000,2.000000],
           "flags": [],
-          "desc": "geometry to be rasterized"
+          "desc": "geometry box relative to screen (x, y, width, height)"
+        },
+        {
+          "name": "box_resize",
+          "type": "node",
+          "node_types": ["Texture2D"],
+          "flags": [],
+          "desc": "if set, `layout` will be honored by resizing the geometry to match the target"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "stretch",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "content aspect layout policy"
+        },
+        {
+          "name": "shape",
+          "type": "node",
+          "node_types": ["ShapeCircle", "ShapeNGon", "ShapeRectangle", "ShapeTriangle", "Rotate", "RotateQuat", "Transform", "Translate", "Scale", "Skew"],
+          "flags": [],
+          "desc": "shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)"
         },
         {
           "name": "filters",
@@ -4391,6 +4581,142 @@
           "default": [1.000000,1.000000],
           "flags": [],
           "desc": "UV coordinate associated with `edge2`"
+        }
+      ]
+    },
+    "ShapeCircle": {
+      "file": "src/node_shapes.c",
+      "params": [
+        {
+          "name": "radius",
+          "type": "f32",
+          "default": 1.000000,
+          "flags": ["live", "node"],
+          "desc": "circle radius"
+        },
+        {
+          "name": "diffusion",
+          "type": "f32",
+          "default": 0.000000,
+          "flags": ["live", "node"],
+          "desc": "how much the border smoothly spreads / gets blurry)"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "fit",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "aspect layout policy"
+        }
+      ]
+    },
+    "ShapeRectangle": {
+      "file": "src/node_shapes.c",
+      "params": [
+        {
+          "name": "size",
+          "type": "vec2",
+          "default": [1.000000,1.000000],
+          "flags": ["live", "node"],
+          "desc": "width and height"
+        },
+        {
+          "name": "rounding",
+          "type": "vec4",
+          "default": [0.000000,0.000000,0.000000,0.000000],
+          "flags": ["live", "node"],
+          "desc": "corners rounding (top-left, top-right, bottom-right, bottom-left)"
+        },
+        {
+          "name": "diffusion",
+          "type": "f32",
+          "default": 0.000000,
+          "flags": ["live", "node"],
+          "desc": "how much the border smoothly spreads / gets blurry)"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "fit",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "aspect layout policy"
+        }
+      ]
+    },
+    "ShapeTriangle": {
+      "file": "src/node_shapes.c",
+      "params": [
+        {
+          "name": "radius",
+          "type": "f32",
+          "default": 1.000000,
+          "flags": ["live", "node"],
+          "desc": "circle radius"
+        },
+        {
+          "name": "rounding",
+          "type": "f32",
+          "default": 0.000000,
+          "flags": ["live", "node"],
+          "desc": "edges rounding"
+        },
+        {
+          "name": "diffusion",
+          "type": "f32",
+          "default": 0.000000,
+          "flags": ["live", "node"],
+          "desc": "how much the border smoothly spreads / gets blurry)"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "fit",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "aspect layout policy"
+        }
+      ]
+    },
+    "ShapeNGon": {
+      "file": "src/node_shapes.c",
+      "params": [
+        {
+          "name": "n",
+          "type": "i32",
+          "default": 5,
+          "flags": ["live", "node"],
+          "desc": "number of points of the N-gon"
+        },
+        {
+          "name": "radius",
+          "type": "f32",
+          "default": 1.000000,
+          "flags": ["live", "node"],
+          "desc": "circle radius"
+        },
+        {
+          "name": "rounding",
+          "type": "f32",
+          "default": 0.000000,
+          "flags": ["live", "node"],
+          "desc": "edges rounding"
+        },
+        {
+          "name": "diffusion",
+          "type": "f32",
+          "default": 0.000000,
+          "flags": ["live", "node"],
+          "desc": "how much the border smoothly spreads / gets blurry)"
+        },
+        {
+          "name": "layout",
+          "type": "select",
+          "default": "fit",
+          "choices": "display_layout",
+          "flags": [],
+          "desc": "aspect layout policy"
         }
       ]
     },

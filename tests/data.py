@@ -356,8 +356,8 @@ def data_noise_wiggle(cfg: ngl.SceneCfg):
     cfg.aspect_ratio = (1, 1)
     cfg.duration = 3
 
-    geometry = ngl.Circle(radius=0.25, npoints=6)
-    draw = ngl.DrawColor(geometry=geometry)
+    shape = ngl.ShapeNGon(radius=0.25, n=6)
+    draw = ngl.DrawColor(shape=shape, blending="src_over")
     translate = ngl.EvalVec3("wiggle.x", "wiggle.y", "0")
     translate.update_resources(wiggle=ngl.NoiseVec2(octaves=8))
     return ngl.Translate(draw, vector=translate)

@@ -32,6 +32,7 @@ struct filterschain;
 #define NGLI_FILTER_HELPER_NOISE       (1U << 1)
 #define NGLI_FILTER_HELPER_SRGB        (1U << 2)
 #define NGLI_FILTER_HELPER_OKLAB       (1U << 3)
+#define NGLI_FILTER_HELPER_SHAPES      ((1U << 4) | NGLI_FILTER_HELPER_MISC_UTILS)
 
 struct filter {
     const char *name;

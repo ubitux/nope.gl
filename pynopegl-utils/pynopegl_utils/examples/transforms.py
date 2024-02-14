@@ -37,11 +37,10 @@ def animated_camera(cfg: ngl.SceneCfg, rotate=True):
     """Animated camera around a scene"""
     g = ngl.Group()
 
-    q = ngl.Quad((-0.5, -0.5, 0), (1, 0, 0), (0, 1, 0))
     media = load_media("mire")
     m = ngl.Media(media.filename)
     t = ngl.Texture2D(data_src=m)
-    node = ngl.DrawTexture(t, geometry=q)
+    node = ngl.DrawTexture(t, box=(-0.5, -0.5, 1, 1))
     g.add_children(node)
 
     translate = ngl.Translate(node, vector=(-0.6, 0.8, -1))

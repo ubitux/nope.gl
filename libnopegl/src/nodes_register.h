@@ -161,6 +161,10 @@
     action(NGL_NODE_TRANSFORM,              ngli_transform_class)               \
     action(NGL_NODE_TRANSLATE,              ngli_translate_class)               \
     action(NGL_NODE_TRIANGLE,               ngli_triangle_class)                \
+    action(NGL_NODE_SHAPECIRCLE,            ngli_shapecircle_class)             \
+    action(NGL_NODE_SHAPERECTANGLE,         ngli_shaperectangle_class)          \
+    action(NGL_NODE_SHAPETRIANGLE,          ngli_shapetriangle_class)           \
+    action(NGL_NODE_SHAPENGON,              ngli_shapengon_class)               \
     action(NGL_NODE_STREAMEDINT,            ngli_streamedint_class)             \
     action(NGL_NODE_STREAMEDIVEC2,          ngli_streamedivec2_class)           \
     action(NGL_NODE_STREAMEDIVEC3,          ngli_streamedivec3_class)           \

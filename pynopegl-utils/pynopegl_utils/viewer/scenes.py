@@ -29,11 +29,11 @@ def demo(cfg: ngl.SceneCfg, shape="square"):
     cfg.duration = 3
 
     if shape == "triangle":
-        geometry = ngl.Triangle()
+        shape = ngl.ShapeTriangle()
     elif shape == "square":
-        geometry = ngl.Quad()
+        shape = ngl.ShapeRectangle()
     elif shape == "circle":
-        geometry = ngl.Circle(radius=0.6, npoints=128)
+        shape = ngl.ShapeCircle()
     else:
         assert False
 
@@ -44,7 +44,9 @@ def demo(cfg: ngl.SceneCfg, shape="square"):
         color_br=ngl.UniformColor(value=(0, 0.5, 1), live_id="bottom-right"),
         color_bl=ngl.UniformColor(value=(1, 0, 1), live_id="bottom-left"),
         linear=ulinear,
-        geometry=geometry,
+        shape=shape,
+        blending="src_over",
+        box=(-0.5, -0.5, 1, 1),
     )
 
     text = ngl.Text(

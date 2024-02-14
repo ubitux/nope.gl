@@ -24,7 +24,18 @@
 #define ngli_linear(a, b, x) (((x) - (a)) / ((b) - (a)))
 #define ngli_linearstep(a, b, x) ngli_sat(ngli_linear(a, b, x))
 
-/* Anti-aliasing approximation */
+/*
+ * Centered Anti-aliasing approximation of a signed distance which is negative
+ * outside and positive inside.
+ *
+ * For a centered diffuse, we want:
+ *    linearstep(-diffuse/2, diffuse/2, x)
+ * This simplifies down to:
+ *    sat(x/diffuse + 1/2)
+ * To have anti-aliasing "pixel-based diffuse", the diffuse needs to match the
+ * pixel size. For some reason, the gradient length (fwidth) is a good
+ * approximation of that.
+ */
 float ngli_aa(float x) { return ngli_sat(x / fwidth(x) + 0.5); }
 
 const vec3 ngli_luma_weights = vec3(.2126, .7152, .0722); // BT.709

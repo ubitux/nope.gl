@@ -53,7 +53,9 @@ def velocity_triangle_rotate(cfg: ngl.SceneCfg):
     )
 
     p0, p1, p2 = equilateral_triangle_coords(2.0)
-    triangle = ngl.DrawColor(COLORS.white, geometry=ngl.Triangle(p0, p1, p2))
+    prog_t = ngl.Program(vertex=get_shader("color.vert"), fragment=get_shader("color.frag"))
+    triangle = ngl.Draw(geometry=ngl.Triangle(p0, p1, p2), program=prog_t)
+    triangle.update_frag_resources(color=ngl.UniformVec3(COLORS.white), opacity=ngl.UniformFloat(1))
     triangle = ngl.Rotate(triangle, angle=anim)
 
     prog_c = ngl.Program(vertex=get_shader("color.vert"), fragment=frag)

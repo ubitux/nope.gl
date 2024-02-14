@@ -42,8 +42,7 @@ _SHARED_UNIFORM_CUEPOINTS = dict((("0", (-0.5, -0.5)), ("1", (0.5, 0.5))))
 def _get_live_shared_uniform_scene(cfg: ngl.SceneCfg, color, debug_positions):
     group = ngl.Group()
     for i in range(2):
-        quad = ngl.Quad((-1 + i, -1 + i, 0), (1, 0, 0), (0, 1, 0))
-        draw = ngl.DrawColor(color, geometry=quad)
+        draw = ngl.DrawColor(color, box=(-1 + i, -1 + i, 1, 1))
         group.add_children(draw)
     if debug_positions:
         group.add_children(get_points_nodes(cfg, _SHARED_UNIFORM_CUEPOINTS))

@@ -22,6 +22,7 @@
 import math
 from typing import Mapping, Tuple
 
+from pynopegl_utils.misc import get_shader
 from pynopegl_utils.tests.cmp_cuepoints import test_cuepoints
 from pynopegl_utils.tests.cuepoints_utils import get_points_nodes
 from pynopegl_utils.toolbox.colors import COLORS
@@ -79,8 +80,10 @@ def _get_blending_base_objects():
     circle = ngl.Circle(radius=_CIRCLE_RADIUS, npoints=100)
     positions = _equilateral_triangle_coords(_CIRCLE_RADIUS * 2.0 / 3.0)
     colored_circles = ngl.Group(label="colored circles")
+    program = ngl.Program(vertex=get_shader("color.vert"), fragment=get_shader("color.frag"))
     for position, color in zip(positions, _CIRCLES_COLORS):
-        draw = ngl.DrawColor(color, geometry=circle)
+        draw = ngl.Draw(program=program, geometry=circle)
+        draw.update_frag_resources(color=ngl.UniformVec3(color), opacity=ngl.UniformFloat(1))
         draw = ngl.Translate(draw, position + (0.0,))
         colored_circles.add_children(draw)
     return colored_circles, circle, positions
@@ -88,7 +91,9 @@ def _get_blending_base_objects():
 
 def _get_background_circles(circle, positions, bcolor):
     blend_bg = ngl.Group()
-    draw = ngl.DrawColor(bcolor, geometry=circle)
+    program = ngl.Program(vertex=get_shader("color.vert"), fragment=get_shader("color.frag"))
+    draw = ngl.Draw(program=program, geometry=circle)
+    draw.update_frag_resources(color=ngl.UniformVec3(bcolor), opacity=ngl.UniformFloat(1))
     for position in positions:
         tdraw = ngl.Translate(draw, position + (0.0,))
         blend_bg.add_children(tdraw)

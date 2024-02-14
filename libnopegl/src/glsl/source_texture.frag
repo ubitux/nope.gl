@@ -22,5 +22,8 @@
 
 vec4 source_texture()
 {
-    return ngl_texvideo(tex, tex_coord);
+    vec2 coord = ar_trf_content.xy * tex_coord + ar_trf_content.zw;
+    if (coord != ngli_sat(coord))
+        return vec4(0.0);
+    return ngl_texvideo(tex, coord);
 }

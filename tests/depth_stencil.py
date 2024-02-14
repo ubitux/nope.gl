@@ -25,9 +25,8 @@ from pynopegl_utils.toolbox.colors import COLORS
 import pynopegl as ngl
 
 
-def _draw_quad(corner=(-1, -1, 0), width=(2, 0, 0), height=(0, 2, 0), color=(1, 1, 1), opacity=1.0):
-    quad = ngl.Quad(corner, width, height)
-    return ngl.DrawColor(color, opacity=opacity, geometry=quad, blending="src_over")
+def _draw_quad(color=(1, 1, 1), opacity=1.0):
+    return ngl.DrawColor(color, opacity=opacity, box=(-1, -1, 2, 2), blending="src_over")
 
 
 @test_fingerprint(width=16, height=16, keyframes=2, tolerance=1)
@@ -41,7 +40,8 @@ def depth_stencil_depth(cfg: ngl.SceneCfg):
     for i in range(count):
         depth = (i + 1) / count
         corner = (-1 + (count - 1 - i) * 2 / count, -1, depth)
-        draw = _draw_quad(corner=corner, color=(depth, depth, depth))
+        draw = _draw_quad(color=(depth, depth, depth))
+        draw = ngl.Translate(draw, vector=corner)
         graphicconfig = ngl.GraphicConfig(
             draw,
             depth_test=True,
@@ -52,7 +52,9 @@ def depth_stencil_depth(cfg: ngl.SceneCfg):
     for i, depth in enumerate((0.4, 0.6)):
         corner = (-1, -0.5 + 0.25 * i, depth)
         height = (0, 1 - 0.25 * i * 2, 0)
-        draw = _draw_quad(corner=corner, height=height, color=COLORS.red, opacity=0.5)
+        draw = _draw_quad(color=COLORS.red, opacity=0.5)
+        draw = ngl.Translate(draw, vector=corner)
+        draw = ngl.Scale(draw, factors=height)
         graphicconfig = ngl.GraphicConfig(
             draw,
             depth_test=True,
@@ -73,7 +75,8 @@ def depth_stencil_stencil(cfg: ngl.SceneCfg):
 
     count = 4
     for i in range(count):
-        draw = _draw_quad(corner=(-1 + (i * 2) / count, -1, 0), color=COLORS.black)
+        draw = _draw_quad(color=COLORS.black)
+        draw = ngl.Translate(draw, vector=(-1 + (i * 2) / count, -1, 0))
         graphicconfig = ngl.GraphicConfig(
             draw,
             color_write_mask="",

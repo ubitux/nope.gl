@@ -662,5 +662,4 @@ def texture_reframing(cfg: ngl.SceneCfg):
     tex = ngl.Scale(tex, factors=(1.2, 1.2, 1))
     tex = ngl.Rotate(tex, angle=ngl.AnimatedFloat(anim_angle_kf))
     tex = ngl.Translate(tex, vector=ngl.AnimatedVec3(anim_pos_kf))
-    geometry = ngl.Quad(corner=(-0.8, -0.8, 0), width=(1.6, 0, 0), height=(0, 1.6, 0))
-    return ngl.DrawTexture(texture=tex, geometry=geometry)
+    return ngl.DrawTexture(texture=tex, box=(-0.8, -0.8, 1.6, 1.6))

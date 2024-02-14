@@ -105,7 +105,6 @@ def _get_random_geometry(rng):
         npoints=rng.randint(5, 25),
     )
     quad = lambda rng: ngl.Quad(
-        corner=_get_random_position(rng),
         width=(rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5), 0),
         height=(rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5), 0),
     )
@@ -115,6 +114,40 @@ def _get_random_geometry(rng):
         edge2=_get_random_position(rng),
     )
     shape_func = rng.choice((circle, quad, triangle))
+    return shape_func(rng)
+
+
+def _get_random_box(rng):
+    x = rng.uniform(-0.5, 0.0)
+    y = rng.uniform(-0.5, 0.0)
+    w = rng.uniform(0.5, 1.5)
+    h = rng.uniform(0.5, 1.5)
+    return x, y, w, h
+
+
+def _get_random_shape(rng):
+    diffusion = rng.uniform(0.0, 0.1) if rng.randint(0, 2) == 0 else None
+    rounding = rng.uniform(0.01, 0.05) if rng.randint(0, 2) == 0 else None
+    circle = lambda rng: ngl.ShapeCircle(
+        radius=rng.uniform(1 / 4, 3 / 4),
+        diffusion=diffusion,
+    )
+    rect = lambda rng: ngl.ShapeRectangle(
+        size=(rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5)),
+        diffusion=diffusion,
+        rounding=(
+            rng.uniform(0.01, 0.05),
+            rng.uniform(0.01, 0.05),
+            rng.uniform(0.01, 0.05),
+            rng.uniform(0.01, 0.05),
+        ),
+    )
+    triangle = lambda rng: ngl.ShapeTriangle(
+        radius=rng.uniform(1 / 4, 3 / 4),
+        diffusion=diffusion,
+        rounding=rounding,
+    )
+    shape_func = rng.choice((circle, rect, triangle))
     return shape_func(rng)
 
 
@@ -138,7 +171,7 @@ def _get_random_texture(cfg: ngl.SceneCfg, rng):
 def _get_random_drawtexture(cfg: ngl.SceneCfg, rng):
     return ngl.DrawTexture(
         texture=_get_random_texture(cfg, rng),
-        geometry=_get_random_geometry(rng),
+        shape=_get_random_shape(rng),
         blending="src_over",
     )
 
@@ -231,7 +264,7 @@ def _get_random_draw(cfg: ngl.SceneCfg, rng, t0, t1, enable_computes):
     color = lambda rng: ngl.DrawColor(
         color=_get_random_animated_color(rng, t0, t1),
         opacity=_get_random_animated_opacity(rng, t0, t1),
-        geometry=_get_random_geometry(rng),
+        shape=_get_random_shape(rng),
         blending="src_over",
     )
     gradient = lambda rng: ngl.DrawGradient(
@@ -242,7 +275,7 @@ def _get_random_draw(cfg: ngl.SceneCfg, rng, t0, t1, enable_computes):
         pos0=(rng.random(), rng.random()),
         pos1=(rng.random(), rng.random()),
         mode=rng.choice(("ramp", "radial")),
-        geometry=_get_random_geometry(rng),
+        shape=_get_random_shape(rng),
         blending="src_over",
     )
     texture = lambda rng: _get_random_drawtexture(cfg, rng)
@@ -314,7 +347,7 @@ def _get_random_layer(cfg: ngl.SceneCfg, rng, t0, t1, enable_computes, layer=4):
             rtt.add_color_textures(rtt_tex)
             rtt_draw = ngl.DrawTexture(
                 rtt_tex,
-                geometry=_get_random_geometry(rng),
+                shape=_get_random_shape(rng),
                 blending="src_over",
             )
             rtt_draw = _get_random_transform(rng, t0, t1, rtt_draw)

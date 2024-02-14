@@ -6,8 +6,8 @@ def wiggle(cfg: ngl.SceneCfg):
     cfg.aspect_ratio = (1, 1)
     cfg.duration = 3
 
-    geometry = ngl.Circle(radius=0.25, npoints=6)
-    draw = ngl.DrawColor(geometry=geometry)
+    shape = ngl.ShapeNGon(n=6, radius=0.25)
+    draw = ngl.DrawColor(shape=shape, blending="src_over")
 
     # Extend 2-dimensional noise into a vec3 for the Translate node using EvalVec3
     translate = ngl.EvalVec3("wiggle.x", "wiggle.y", "0")

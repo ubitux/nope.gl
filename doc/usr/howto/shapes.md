@@ -1,29 +1,29 @@
 # Creating shapes
 
-There are 3 basic shape nodes: [Triangle], [Quad] and [Circle]. It is also
-possible to create custom geometries with the [Geometry] node.
+There are 4 basic shape nodes: [ShapeTriangle], [ShapeRectangle], [ShapeCircle]
+and [ShapeNGon].
 
 ```{nope} shapes.triangle
 :export_type: image
 Rendering a triangle
 ```
 
-```{nope} shapes.quad
+```{nope} shapes.rectangle
 :export_type: image
-Rendering a quadrilateral
+Rendering a rectangle with 2 rounded corners
 ```
 
 ```{nope} shapes.circle
 :export_type: image
-Rendering a circle with 64 points
+Rendering a perfect circle
 ```
 
-```{nope} shapes.geometry
+```{nope} shapes.ngon
 :export_type: image
-Rendering a custom geometry composed of 4 random points
+Rendering an pentagon
 ```
 
-[Triangle]: /usr/ref/libnopegl.md#triangle
-[Quad]: /usr/ref/libnopegl.md#quad
-[Circle]: /usr/ref/libnopegl.md#circle
-[Geometry]: /usr/ref/libnopegl.md#geometry
+[ShapeTriangle]: /usr/ref/libnopegl.md#shapetriangle
+[ShapeQuad]: /usr/ref/libnopegl.md#shaperectangle
+[ShapeCircle]: /usr/ref/libnopegl.md#shapecircle
+[ShapeNGon]: /usr/ref/libnopegl.md#shapengon

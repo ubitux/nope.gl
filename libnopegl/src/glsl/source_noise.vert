@@ -21,6 +21,7 @@
 
 void main()
 {
-    ngl_out_pos = projection_matrix * modelview_matrix * vec4(position, 1.0);
+    vec2 pos = ar_trf_geom.xy * position + ar_trf_geom.zw;
+    ngl_out_pos = projection_matrix * modelview_matrix * vec4(pos, 0.0, 1.0);
     uv = uvcoord;
 }

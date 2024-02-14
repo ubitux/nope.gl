@@ -1,5 +1,6 @@
 /*
- * Copyright 2023 Clément Bœsch <u pkh.me>
+ * Copyright 2024 Clément Bœsch <u pkh.me>
+ * Copyright 2024 Nope Forge
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,11 +20,10 @@
  * under the License.
  */
 
-void main()
+vec4 filter_circle(vec4 color, vec2 coords, float radius, float diffusion)
 {
-    vec2 pos = ar_trf_geom.xy * position + ar_trf_geom.zw;
-    ngl_out_pos = projection_matrix * modelview_matrix * vec4(pos, 0.0, 1.0);
-    uv = uvcoord;
-    source_coord = (source_coord_matrix * vec4(uvcoord, 0.0, 1.0)).xy;
-    displacement_coord = (displacement_coord_matrix * vec4(uvcoord, 0.0, 1.0)).xy;
+    coords = ngli_apply_shape_space(coords);
+    float sd = ngli_sd_circle(coords, radius);
+    float alpha = ngli_alpha_from_sd(sd, diffusion);
+    return color * alpha;
 }

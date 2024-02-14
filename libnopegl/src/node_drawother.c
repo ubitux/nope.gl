@@ -27,7 +27,6 @@
 #include "blending.h"
 #include "darray.h"
 #include "filterschain.h"
-#include "geometry.h"
 #include "gpu_ctx.h"
 #include "internal.h"
 #include "log.h"
@@ -100,7 +99,11 @@ struct pipeline_desc {
     struct pipeline_compat *pipeline_compat;
     int32_t modelview_matrix_index;
     int32_t projection_matrix_index;
+    int32_t ar_trf_geom_index;
     int32_t aspect_index;
+    int32_t shape_matrix_index;
+    int32_t ar_trf_content_index;
+    int32_t ar_trf_shape_index;
     struct darray uniforms_map; // struct uniform_map
     struct darray blocks_map; // struct resource_map
     struct darray textures_map; // struct texture_map
@@ -110,7 +113,10 @@ struct pipeline_desc {
 
 struct render_common_opts {
     int blending;
-    struct ngl_node *geometry;
+    float box[4];
+    struct ngl_node *box_resize;
+    int layout;
+    struct ngl_node *shape;
     struct ngl_node **filters;
     size_t nb_filters;
 };
@@ -253,16 +259,46 @@ struct drawwaveform_priv {
     struct render_common common;
 };
 
-#define COMMON_PARAMS                                                                                                \
-    {"blending", NGLI_PARAM_TYPE_SELECT, OFFSET(common.blending),                                                    \
-                 .choices=&ngli_blending_choices,                                                                    \
-                 .desc=NGLI_DOCSTRING("define how this node and the current frame buffer are blending together")},   \
-    {"geometry", NGLI_PARAM_TYPE_NODE, OFFSET(common.geometry),                                                      \
-                 .node_types=GEOMETRY_TYPES_LIST,                                                                    \
-                 .desc=NGLI_DOCSTRING("geometry to be rasterized")},                                                 \
-    {"filters",  NGLI_PARAM_TYPE_NODELIST, OFFSET(common.filters),                                                   \
-                 .node_types=FILTERS_TYPES_LIST,                                                                     \
-                 .desc=NGLI_DOCSTRING("filter chain to apply on top of this source")},                               \
+#define SHAPES_LIST (const uint32_t[]){NGL_NODE_SHAPECIRCLE,     \
+                                       NGL_NODE_SHAPENGON,       \
+                                       NGL_NODE_SHAPERECTANGLE,  \
+                                       NGL_NODE_SHAPETRIANGLE,   \
+                                       NGL_NODE_ROTATE,          \
+                                       NGL_NODE_ROTATEQUAT,      \
+                                       NGL_NODE_TRANSFORM,       \
+                                       NGL_NODE_TRANSLATE,       \
+                                       NGL_NODE_SCALE,           \
+                                       NGL_NODE_SKEW,            \
+                                       NGLI_NODE_NONE}
+
+#define COMMON_PARAMS                                                                                                                           \
+    {"blending",   NGLI_PARAM_TYPE_SELECT, OFFSET(common.blending),                                                                             \
+                   .choices=&ngli_blending_choices,                                                                                             \
+                   .desc=NGLI_DOCSTRING("define how this node and the current frame buffer are blending together")},                            \
+    {"box",        NGLI_PARAM_TYPE_VEC4, OFFSET(common.box), {.vec={-1.f, -1.f, 2.f, 2.f}},                                                     \
+                   .desc=NGLI_DOCSTRING("geometry box relative to screen (x, y, width, height)")},                                              \
+    {"box_resize", NGLI_PARAM_TYPE_NODE, OFFSET(common.box_resize),                                                                             \
+                   .node_types=(const uint32_t[]){NGL_NODE_TEXTURE2D, NGLI_NODE_NONE},                                                          \
+                   .desc=NGLI_DOCSTRING("if set, `layout` will be honored by resizing the geometry to match the target")},                      \
+    {"layout",     NGLI_PARAM_TYPE_SELECT, OFFSET(common.layout), {.i32=NGLI_LAYOUT_STRETCH},                                                   \
+                   .choices=&ngli_display_layout_choices,                                                                                       \
+                   .desc=NGLI_DOCSTRING("content aspect layout policy")},                                                                       \
+    {"shape",      NGLI_PARAM_TYPE_NODE, OFFSET(common.shape),                                                                                  \
+                   .node_types=SHAPES_LIST,                                                                                                     \
+                   .desc=NGLI_DOCSTRING("shape to draw within the geometry (anything outside the shape will be rasterized with `(0,0,0,0)`)")}, \
+    {"filters",    NGLI_PARAM_TYPE_NODELIST, OFFSET(common.filters),                                                                            \
+                   .node_types=FILTERS_TYPES_LIST,                                                                                              \
+                   .desc=NGLI_DOCSTRING("filter chain to apply on top of this source")},                                                        \
+
+// XXX move to a dedicated file?
+const struct param_choices ngli_display_layout_choices = {
+    .name = "display_layout",
+    .consts = {
+        {"stretch", NGLI_LAYOUT_STRETCH, .desc=NGLI_DOCSTRING("stretch XXX")},
+        {"fit",     NGLI_LAYOUT_FIT,     .desc=NGLI_DOCSTRING("fit XXX")},
+        {"cover",   NGLI_LAYOUT_COVER,   .desc=NGLI_DOCSTRING("cover XXX")},
+    }
+};
 
 #define OFFSET(x) offsetof(struct drawcolor_opts, x)
 static const struct node_param drawcolor_params[] = {
@@ -466,13 +502,6 @@ static const struct node_param drawwaveform_params[] = {
 };
 #undef OFFSET
 
-static const float default_vertices[] = {
-   -1.f,-1.f, 0.f,
-    1.f,-1.f, 0.f,
-   -1.f, 1.f, 0.f,
-    1.f, 1.f, 0.f,
-};
-
 static const float default_uvcoords[] = {
     0.f, 1.f,
     1.f, 1.f,
@@ -499,6 +528,18 @@ static int combine_filters_code(struct render_common *s, const struct render_com
             return ret;
     }
 
+    if (o->shape) {
+        const struct ngl_node *shape = ngli_transform_get_leaf_node(o->shape);
+        if (!shape) {
+            LOG(ERROR, "no shape found at the end of the transform chain");
+            return NGL_ERROR_INVALID_USAGE;
+        }
+        struct filter *filter = shape->priv_data;
+        ret = ngli_filterschain_add_filter(s->filterschain, filter);
+        if (ret < 0)
+            return ret;
+    }
+
     s->combined_fragment = ngli_filterschain_get_combination(s->filterschain);
     if (!s->combined_fragment)
         return NGL_ERROR_MEMORY;
@@ -509,14 +550,6 @@ static int combine_filters_code(struct render_common *s, const struct render_com
 static void draw_simple(struct render_common *s, struct pipeline_compat *pl_compat)
 {
     ngli_pipeline_compat_draw(pl_compat, s->nb_vertices, 1);
-}
-
-static void draw_indexed(struct render_common *s, struct pipeline_compat *pl_compat)
-{
-    ngli_pipeline_compat_draw_indexed(pl_compat,
-                                      s->geometry->indices_buffer,
-                                      s->geometry->indices_layout.format,
-                                      (int)s->geometry->indices_layout.count, 1);
 }
 
 static void reset_pipeline_desc(void *user_arg, void *data)
@@ -542,71 +575,42 @@ static int init(struct ngl_node *node,
     ngli_darray_set_free_func(&s->pipeline_descs, reset_pipeline_desc, NULL);
 
     snprintf(s->position_attr.name, sizeof(s->position_attr.name), "position");
-    s->position_attr.type   = NGLI_TYPE_VEC3;
-    s->position_attr.format = NGLI_FORMAT_R32G32B32_SFLOAT;
+    s->position_attr.type   = NGLI_TYPE_VEC2;
+    s->position_attr.format = NGLI_FORMAT_R32G32_SFLOAT;
 
     snprintf(s->uvcoord_attr.name, sizeof(s->uvcoord_attr.name), "uvcoord");
     s->uvcoord_attr.type   = NGLI_TYPE_VEC2;
     s->uvcoord_attr.format = NGLI_FORMAT_R32G32_SFLOAT;
 
-    if (!o->geometry) {
-        s->uvcoords = ngli_buffer_create(gpu_ctx);
-        s->vertices = ngli_buffer_create(gpu_ctx);
-        if (!s->uvcoords || !s->vertices)
-            return NGL_ERROR_MEMORY;
+    const struct ngli_box box = {NGLI_ARG_VEC4(o->box)};
+    const float vertices[] = {
+        box.x,         box.y,
+        box.x + box.w, box.y,
+        box.x,         box.y + box.h,
+        box.x + box.w, box.y + box.h,
+    };
 
-        int ret;
-        if ((ret = ngli_buffer_init(s->vertices, sizeof(default_vertices), VERTEX_USAGE_FLAGS)) < 0 ||
-            (ret = ngli_buffer_init(s->uvcoords, sizeof(default_uvcoords), VERTEX_USAGE_FLAGS)) < 0 ||
-            (ret = ngli_buffer_upload(s->vertices, default_vertices, 0, sizeof(default_vertices))) < 0 ||
-            (ret = ngli_buffer_upload(s->uvcoords, default_uvcoords, 0, sizeof(default_uvcoords))) < 0)
-            return ret;
+    s->uvcoords = ngli_buffer_create(gpu_ctx);
+    s->vertices = ngli_buffer_create(gpu_ctx);
+    if (!s->uvcoords || !s->vertices)
+        return NGL_ERROR_MEMORY;
 
-        s->position_attr.stride = 3 * sizeof(float);
-        s->position_attr.buffer = s->vertices;
+    int ret;
+    if ((ret = ngli_buffer_init(s->vertices, sizeof(vertices), VERTEX_USAGE_FLAGS)) < 0 ||
+        (ret = ngli_buffer_init(s->uvcoords, sizeof(default_uvcoords), VERTEX_USAGE_FLAGS)) < 0 ||
+        (ret = ngli_buffer_upload(s->vertices, vertices, 0, sizeof(vertices))) < 0 ||
+        (ret = ngli_buffer_upload(s->uvcoords, default_uvcoords, 0, sizeof(default_uvcoords))) < 0)
+        return ret;
 
-        s->uvcoord_attr.stride = 2 * sizeof(float);
-        s->uvcoord_attr.buffer = s->uvcoords;
+    s->position_attr.stride = 2 * sizeof(float);
+    s->position_attr.buffer = s->vertices;
 
-        s->nb_vertices = 4;
-        s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-        s->draw = draw_simple;
-    } else {
-        struct geometry *geometry = *(struct geometry **)o->geometry->priv_data;
-        struct buffer *vertices = geometry->vertices_buffer;
-        struct buffer *uvcoords = geometry->uvcoords_buffer;
-        struct buffer_layout vertices_layout = geometry->vertices_layout;
-        struct buffer_layout uvcoords_layout = geometry->uvcoords_layout;
+    s->uvcoord_attr.stride = 2 * sizeof(float);
+    s->uvcoord_attr.buffer = s->uvcoords;
 
-        if (!uvcoords) {
-            LOG(ERROR, "the specified geometry is missing UV coordinates");
-            return NGL_ERROR_INVALID_USAGE;
-        }
-
-        if (vertices_layout.type != NGLI_TYPE_VEC3) {
-            LOG(ERROR, "only geometry with vec3 vertices are supported");
-            return NGL_ERROR_UNSUPPORTED;
-        }
-
-        if (uvcoords && uvcoords_layout.type != NGLI_TYPE_VEC2) {
-            LOG(ERROR, "only geometry with vec2 uvcoords are supported");
-            return NGL_ERROR_UNSUPPORTED;
-        }
-
-        s->geometry = geometry;
-
-        s->position_attr.stride = vertices_layout.stride;
-        s->position_attr.offset = vertices_layout.offset;
-        s->position_attr.buffer = vertices;
-
-        s->uvcoord_attr.stride = uvcoords_layout.stride;
-        s->uvcoord_attr.offset = uvcoords_layout.offset;
-        s->uvcoord_attr.buffer = uvcoords;
-
-        s->nb_vertices = (int)vertices_layout.count;
-        s->topology = geometry->topology;
-        s->draw = geometry->indices_buffer ? draw_indexed : draw_simple;
-    }
+    s->nb_vertices = 4;
+    s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    s->draw = draw_simple;
 
     return combine_filters_code(s, o, base_name, base_fragment);
 }
@@ -699,6 +703,7 @@ static int drawtexture_init(struct ngl_node *node)
     if (!ngli_darray_push(&s->common.draw_resources, &texture_node))
         return NGL_ERROR_MEMORY;
 
+    s->common.helpers = NGLI_FILTER_HELPER_MISC_UTILS;
     return init(node, &s->common, &o->common, "source_texture", source_texture_frag);
 }
 
@@ -735,7 +740,11 @@ static int init_desc(struct ngl_node *node, struct render_common *s,
     const struct pgcraft_uniform common_uniforms[] = {
         {.name="modelview_matrix",  .type=NGLI_TYPE_MAT4,  .stage=NGLI_PROGRAM_SHADER_VERT},
         {.name="projection_matrix", .type=NGLI_TYPE_MAT4,  .stage=NGLI_PROGRAM_SHADER_VERT},
+        {.name="ar_trf_geom",       .type=NGLI_TYPE_VEC4,  .stage=NGLI_PROGRAM_SHADER_VERT},
         {.name="aspect",            .type=NGLI_TYPE_F32,   .stage=NGLI_PROGRAM_SHADER_FRAG},
+        {.name="shape_matrix",      .type=NGLI_TYPE_MAT4,  .stage=NGLI_PROGRAM_SHADER_FRAG},
+        {.name="ar_trf_content",    .type=NGLI_TYPE_VEC4,  .stage=NGLI_PROGRAM_SHADER_FRAG},
+        {.name="ar_trf_shape",      .type=NGLI_TYPE_VEC4,  .stage=NGLI_PROGRAM_SHADER_FRAG},
     };
     for (size_t i = 0; i < NGLI_ARRAY_NB(common_uniforms); i++)
         if (!ngli_darray_push(&desc->uniforms, &common_uniforms[i]))
@@ -852,7 +861,11 @@ static int finalize_pipeline(struct ngl_node *node,
 
     desc->modelview_matrix_index = ngli_pgcraft_get_uniform_index(desc->crafter, "modelview_matrix", NGLI_PROGRAM_SHADER_VERT);
     desc->projection_matrix_index = ngli_pgcraft_get_uniform_index(desc->crafter, "projection_matrix", NGLI_PROGRAM_SHADER_VERT);
+    desc->ar_trf_geom_index = ngli_pgcraft_get_uniform_index(desc->crafter, "ar_trf_geom", NGLI_PROGRAM_SHADER_VERT);
     desc->aspect_index = ngli_pgcraft_get_uniform_index(desc->crafter, "aspect", NGLI_PROGRAM_SHADER_FRAG);
+    desc->shape_matrix_index = ngli_pgcraft_get_uniform_index(desc->crafter, "shape_matrix", NGLI_PROGRAM_SHADER_FRAG);
+    desc->ar_trf_content_index = ngli_pgcraft_get_uniform_index(desc->crafter, "ar_trf_content", NGLI_PROGRAM_SHADER_FRAG);
+    desc->ar_trf_shape_index = ngli_pgcraft_get_uniform_index(desc->crafter, "ar_trf_shape", NGLI_PROGRAM_SHADER_FRAG);
     return 0;
 }
 
@@ -1272,6 +1285,37 @@ static int drawwaveform_prepare(struct ngl_node *node)
     return 0;
 }
 
+enum layout_trf {
+    LAYOUT_TRF_NORMAL,
+    LAYOUT_TRF_INVERSE,
+};
+
+// dst is a vec4 where the first 2 components are the scale and the last 2 components are the offset
+static void get_layout_transform(float dst_ar, float content_ar, int ar_layout, float *dst,
+                                 const struct ngli_box *box, enum layout_trf trf)
+{
+    float sx = 1.f, sy = 1.f;
+    float ox = 0.f, oy = 0.f;
+
+    if (ar_layout != NGLI_LAYOUT_STRETCH) {
+        const float ar = content_ar / dst_ar;
+        const int cond = ar_layout == NGLI_LAYOUT_FIT ? ar < 1.f : ar > 1.f;
+        sx = cond ? 1.f / ar : 1.f;
+        sy = cond ? 1.f : ar;
+        if (trf == LAYOUT_TRF_INVERSE) {
+            sx = 1.f / sx;
+            sy = 1.f / sy;
+        }
+        ox = (1.f - sx) * (box->x + box->w / 2.f);
+        oy = (1.f - sy) * (box->y + box->h / 2.f);
+    }
+
+    dst[0] = sx;
+    dst[1] = sy;
+    dst[2] = ox;
+    dst[3] = oy;
+}
+
 static void drawother_draw(struct ngl_node *node, struct render_common *s, const struct render_common_opts *o)
 {
     struct ngl_node **draw_resources = ngli_darray_data(&s->draw_resources);
@@ -1295,12 +1339,69 @@ static void drawother_draw(struct ngl_node *node, struct render_common *s, const
         ngli_pipeline_compat_update_uniform(pl_compat, desc->aspect_index, &aspect);
     }
 
+    const struct shape_common_opts *shape_opts = NULL;
+    const struct ngl_node *shape = ngli_transform_get_leaf_node(o->shape);
+    if (shape) {
+        const struct shape_priv *shape_priv = shape->priv_data;
+        shape_opts = shape_priv->common_opts;
+    }
+
+    if (desc->shape_matrix_index >= 0) {
+        NGLI_ALIGNED_MAT(shape_matrix);
+        ngli_transform_chain_compute(o->shape, shape_matrix);
+        ngli_pipeline_compat_update_uniform(pl_compat, desc->shape_matrix_index, shape_matrix);
+    }
+
     const struct uniform_map *uniform_map = ngli_darray_data(&desc->uniforms_map);
     for (size_t i = 0; i < ngli_darray_count(&desc->uniforms_map); i++)
         ngli_pipeline_compat_update_uniform(pl_compat, uniform_map[i].index, uniform_map[i].data);
 
     struct texture_map *texture_map = ngli_darray_data(&desc->textures_map);
     const struct ngl_node **reframing_nodes = ngli_darray_data(&desc->reframing_nodes);
+
+    float content_ar = 1.0;
+    if (o->box_resize) {
+        const struct texture_priv *tex = o->box_resize->priv_data;
+        const struct image_params *params = &tex->image.params;
+        content_ar = (float)params->width /  (float)params->height;
+    } else {
+        const size_t nb_textures = ngli_darray_count(&desc->textures_map);
+        if (nb_textures) {
+            const struct image_params *params = &texture_map[0].image->params;
+            content_ar = (float)params->width /  (float)params->height;
+        }
+    }
+
+    const struct ngli_box box = {NGLI_ARG_VEC4(o->box)};
+    const struct viewport viewport = ngli_gpu_ctx_get_viewport(ctx->gpu_ctx);
+
+    const float geometry_aspect = (float)box.w / (float)box.h;
+    const float vp_aspect = (float)viewport.width / (float)viewport.height;
+    const float dst_ar = geometry_aspect * vp_aspect;
+
+    static const struct ngli_box uv_box = {0.f, 0.f, 1.f, 1.f};
+
+    float ar_trf_geom[4], ar_trf_content[4], ar_trf_shape[4];
+
+    if (desc->ar_trf_geom_index >= 0) {
+        const int layout = o->box_resize ? o->layout : NGLI_LAYOUT_STRETCH;
+        get_layout_transform(dst_ar, content_ar, layout, ar_trf_geom, &box, LAYOUT_TRF_INVERSE);
+        ngli_pipeline_compat_update_uniform(pl_compat, desc->ar_trf_geom_index, ar_trf_geom);
+    }
+
+    if (desc->ar_trf_content_index >= 0) {
+        const int layout = o->box_resize ? NGLI_LAYOUT_STRETCH : o->layout;
+        get_layout_transform(dst_ar, content_ar, layout, ar_trf_content, &uv_box, LAYOUT_TRF_NORMAL);
+        ngli_pipeline_compat_update_uniform(pl_compat, desc->ar_trf_content_index, ar_trf_content);
+    }
+
+    if (desc->ar_trf_shape_index >= 0 && shape_opts) {
+        const float geom_ar_trf = ar_trf_geom[0] / ar_trf_geom[1];
+        const int layout = shape_opts->layout;
+        get_layout_transform(dst_ar * geom_ar_trf, 1.0, layout, ar_trf_shape, &uv_box, LAYOUT_TRF_NORMAL);
+        ngli_pipeline_compat_update_uniform(pl_compat, desc->ar_trf_shape_index, ar_trf_shape);
+    }
+
     for (size_t i = 0; i < ngli_darray_count(&desc->textures_map); i++) {
         if (texture_map[i].image_rev != texture_map[i].image->rev) {
             ngli_pipeline_compat_update_image(pl_compat, (int32_t)i, texture_map[i].image);

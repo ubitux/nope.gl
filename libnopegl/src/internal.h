@@ -47,6 +47,7 @@
 #include "block.h"
 #include "drawutils.h"
 #include "graphics_state.h"
+#include "filterschain.h"
 #include "hmap.h"
 #include "hud.h"
 #include "hwconv.h"
@@ -516,6 +517,23 @@ struct texteffect_opts {
     float glow_color[3];
     struct ngl_node *blur_node;
     float blur;
+};
+
+enum {
+    NGLI_LAYOUT_STRETCH,
+    NGLI_LAYOUT_FIT,
+    NGLI_LAYOUT_COVER,
+};
+
+struct shape_common_opts {
+    struct ngl_node *diffusion_node;
+    float diffusion;
+    int layout;    // NGLI_LAYOUT_*
+};
+
+struct shape_priv {
+    struct filter filter;
+    const struct shape_common_opts *common_opts;
 };
 
 enum {

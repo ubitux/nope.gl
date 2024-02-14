@@ -139,11 +139,8 @@ def particles(cfg: ngl.SceneCfg, particles=32):
 def blending_and_stencil(cfg: ngl.SceneCfg):
     """Scene using blending and stencil graphic features"""
     cfg.duration = 5
-    vertex = get_shader("color.vert")
-    fragment = get_shader("color.frag")
 
-    program = ngl.Program(vertex=vertex, fragment=fragment)
-    circle = ngl.Circle(npoints=256)
+    circle = ngl.ShapeCircle()
     cloud_color = ngl.UniformVec3(value=(1, 1, 1))
     cloud_opacity = ngl.UniformFloat(0.4)
 
@@ -163,7 +160,7 @@ def blending_and_stencil(cfg: ngl.SceneCfg):
     )
     main_group.add_children(config)
 
-    draw = ngl.DrawColor(color=(1, 0.8, 0), geometry=circle, label="sun")
+    draw = ngl.DrawColor(color=(1, 0.8, 0), shape=circle, label="sun", blending="src_over")
 
     scale = ngl.Scale(draw, (0.15, 0.15, 0.0))
     translate = ngl.Translate(scale, (0.4, 0.3, 0))
@@ -181,8 +178,7 @@ def blending_and_stencil(cfg: ngl.SceneCfg):
     ]
 
     for center in centers:
-        draw = ngl.Draw(circle, program, blending="src_over")
-        draw.update_frag_resources(color=cloud_color, opacity=cloud_opacity)
+        draw = ngl.DrawColor(color=cloud_color, opacity=cloud_opacity, shape=circle, blending="src_over")
 
         factor = cfg.rng.random() * 0.4 + center[2]
         keyframe = cfg.duration * (cfg.rng.random() * 0.4 + 0.2)
@@ -208,15 +204,7 @@ def blending_and_stencil(cfg: ngl.SceneCfg):
         stencil_depth_pass="keep",
     )
     main_group.add_children(config)
-
-    camera = ngl.Camera(main_group)
-    camera.set_eye(0.0, 0.0, 2.0)
-    camera.set_center(0.0, 0.0, 0.0)
-    camera.set_up(0.0, 1.0, 0.0)
-    camera.set_orthographic(-cfg.aspect_ratio_float, cfg.aspect_ratio_float, -1.0, 1.0)
-    camera.set_clipping(1.0, 10.0)
-
-    return camera
+    return main_group
 
 
 def _get_cube_quads():
@@ -290,12 +278,10 @@ def cube(cfg: ngl.SceneCfg, display_depth_buffer=False):
         rtt.add_color_textures(texture)
         rtt.set_depth_texture(depth_texture)
 
-        quad = ngl.Quad((-1.0, -1.0, 0), (1, 0, 0), (0, 1, 0))
-        draw = ngl.DrawTexture(texture, geometry=quad)
+        draw = ngl.DrawTexture(texture, box=(-1, -1, 1, 1))
         group.add_children(rtt, draw)
 
-        quad = ngl.Quad((0.0, 0.0, 0), (1, 0, 0), (0, 1, 0))
-        draw = ngl.DrawTexture(depth_texture, geometry=quad)
+        draw = ngl.DrawTexture(depth_texture, box=(0, 0, 1, 1))
         group.add_children(rtt, draw)
 
         return group

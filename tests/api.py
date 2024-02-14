@@ -40,7 +40,7 @@ _backend = get_backend(_backend_str) if _backend_str else ngl.Backend.AUTO
 
 
 def _get_scene():
-    return ngl.Scene.from_params(ngl.DrawColor(geometry=ngl.Quad()))
+    return ngl.Scene.from_params(ngl.DrawColor(box=(-0.5, -0.5, 1.0, 1.0)))
 
 
 def api_backend():
@@ -197,10 +197,10 @@ def api_scene_mutate():
 
 def api_scene_ownership():
     """Test if part of a graph is shared between 2 different scenes"""
-    shared_geometry = ngl.Quad()
-    scene0 = ngl.Scene.from_params(ngl.DrawColor(geometry=shared_geometry))
+    shared_shape = ngl.ShapeRectangle()
+    scene0 = ngl.Scene.from_params(ngl.DrawColor(shape=shared_shape, blending="src_over"))
     try:
-        scene1 = ngl.Scene.from_params(ngl.DrawColor(geometry=shared_geometry))
+        scene1 = ngl.Scene.from_params(ngl.DrawColor(shape=shared_shape, blending="src_over"))
     except Exception:
         pass
     else:
@@ -211,8 +211,8 @@ def api_scene_ownership():
 
 def api_scene_resilience():
     """Similar to API the scene ownership test but make sure the API is error resilient"""
-    shared_geometry = ngl.Quad()
-    scene0 = ngl.Scene.from_params(ngl.DrawColor(geometry=shared_geometry))
+    shared_shape = ngl.ShapeRectangle()
+    scene0 = ngl.Scene.from_params(ngl.DrawColor(shape=shared_shape, blending="src_over"))
 
     ctx = ngl.Context()
     ret = ctx.configure(ngl.Config(offscreen=True, width=16, height=16, backend=_backend))
@@ -221,7 +221,7 @@ def api_scene_resilience():
     assert ctx.draw(0) == 0
 
     try:
-        scene1 = ngl.Scene.from_params(ngl.DrawColor(geometry=shared_geometry))
+        scene1 = ngl.Scene.from_params(ngl.DrawColor(shape=shared_shape, blending="src_over"))
     except Exception:
         pass
     else:

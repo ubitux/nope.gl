@@ -15,14 +15,12 @@ def gradient(cfg: ngl.SceneCfg, mode="ramp"):
     pos1 = ngl.EvalVec3("sin(-0.236*t + 0.218)", "sin(-0.851*t - 0.904)", "0", resources=pos_res)
 
     # Represent them with a circle of the "opposite" color (roughly)
-    # The scales are here to honor the aspect ratio to prevent circle stretching
     pt0_color = ngl.EvalVec3("1-c.r", "1-c.g", "1-c.b", resources=dict(c=c0_node))
     pt1_color = ngl.EvalVec3("1-c.r", "1-c.g", "1-c.b", resources=dict(c=c1_node))
-    geom = ngl.Circle(radius=0.05, npoints=16)
-    p0 = ngl.DrawColor(color=pt0_color, geometry=geom)
-    p1 = ngl.DrawColor(color=pt1_color, geometry=geom)
-    p0 = ngl.Scale(p0, factors=(1 / cfg.aspect_ratio_float, 1, 1))
-    p1 = ngl.Scale(p1, factors=(1 / cfg.aspect_ratio_float, 1, 1))
+    radius = 0.05
+    box = (-radius / 2, -radius / 2, radius * 2, radius * 2)
+    p0 = ngl.DrawColor(color=pt0_color, box=box, shape=ngl.ShapeCircle(), blending="src_over")
+    p1 = ngl.DrawColor(color=pt1_color, box=box, shape=ngl.ShapeCircle(), blending="src_over")
     p0 = ngl.Translate(p0, vector=pos0)
     p1 = ngl.Translate(p1, vector=pos1)
 

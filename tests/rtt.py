@@ -241,8 +241,7 @@ def _rtt_load_attachment(cfg: ngl.SceneCfg):
     texture_noop = ngl.Texture2D(width=16, height=16, min_filter="nearest", mag_filter="nearest")
     rtt_noop = ngl.RenderToTexture(draw, [texture_noop])
 
-    quad = ngl.Quad((0, 0, 0), (1, 0, 0), (0, 1, 0))
-    foreground = ngl.DrawTexture(texture, geometry=quad)
+    foreground = ngl.DrawTexture(texture, box=(-1, -1, 1, 1))
 
     return ngl.Group(children=(background, rtt, rtt_noop, foreground))
 
@@ -299,8 +298,7 @@ def rtt_clear_attachment_with_timeranges(cfg: ngl.SceneCfg):
     rtt_noop = ngl.RenderToTexture(ngl.Identity(), [texture])
 
     # Centered rotating quad
-    quad = ngl.Quad((-0.5, -0.5, 0), (1, 0, 0), (0, 1, 0))
-    draw = ngl.DrawColor(COLORS.orange, geometry=quad)
+    draw = ngl.DrawColor(COLORS.orange, box=(-0.5, -0.5, 1, 1))
 
     animkf = [ngl.AnimKeyFrameFloat(0, 0), ngl.AnimKeyFrameFloat(cfg.duration, -360)]
     draw = ngl.Rotate(draw, angle=ngl.AnimatedFloat(animkf))

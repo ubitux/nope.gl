@@ -33,6 +33,74 @@ from pynopegl_utils.toolbox.shapes import equilateral_triangle_coords
 import pynopegl as ngl
 
 
+@test_fingerprint(width=320, height=320)
+@ngl.scene()
+def shape_aa_triangle(cfg: ngl.SceneCfg):
+    cfg.duration = 3
+
+    d = cfg.duration
+    rounding_animkf = [
+        ngl.AnimKeyFrameFloat(0, 0),
+        ngl.AnimKeyFrameFloat(d / 2, 0.5),
+        ngl.AnimKeyFrameFloat(d, 0),
+    ]
+    return ngl.DrawColor(
+        color=(1, 0.5, 0),
+        shape=ngl.ShapeTriangle(
+            radius=0.7,
+            rounding=ngl.AnimatedFloat(rounding_animkf),
+        ),
+    )
+
+
+@test_fingerprint(width=320, height=320, keyframes=20)
+@ngl.scene()
+def shape_aa_rect(cfg: ngl.SceneCfg):
+    cfg.duration = 2.5
+
+    d = cfg.duration
+    N = 10
+    r = 0.3
+    rounding_animkf = [
+        ngl.AnimKeyFrameVec4(0 * d / N, (0, 0, 0, 0)),
+        ngl.AnimKeyFrameVec4(1 * d / N, (r, 0, 0, 0)),
+        ngl.AnimKeyFrameVec4(2 * d / N, (0, 0, 0, 0)),
+        ngl.AnimKeyFrameVec4(3 * d / N, (0, r, 0, 0)),
+        ngl.AnimKeyFrameVec4(4 * d / N, (0, 0, 0, 0)),
+        ngl.AnimKeyFrameVec4(5 * d / N, (0, 0, r, 0)),
+        ngl.AnimKeyFrameVec4(6 * d / N, (0, 0, 0, 0)),
+        ngl.AnimKeyFrameVec4(7 * d / N, (0, 0, 0, r)),
+        ngl.AnimKeyFrameVec4(8 * d / N, (0, 0, 0, 0)),
+        ngl.AnimKeyFrameVec4(9 * d / N, (r, r, r, r)),
+        ngl.AnimKeyFrameVec4(10 * d / N, (0, 0, 0, 0)),
+    ]
+
+    return ngl.Group(
+        children=[
+            ngl.DrawColor(color=(0.2, 0.2, 0.2)),
+            ngl.DrawGradient4(
+                shape=ngl.ShapeRectangle(
+                    size=(1, 0.7),
+                    rounding=ngl.AnimatedVec4(rounding_animkf),
+                    diffusion=0.05,
+                ),
+                blending="src_over",
+            ),
+        ]
+    )
+
+
+@test_fingerprint(width=320, height=320)
+@ngl.scene()
+def shape_aa_circle(cfg: ngl.SceneCfg):
+    diffusion = ngl.UniformFloat(live_id="diffusion")
+    return ngl.DrawColor(
+        color=(1, 0.5, 0),
+        shape=ngl.ShapeCircle(radius=1.0, diffusion=diffusion),
+        blending="src_over",
+    )
+
+
 @test_cuepoints(
     width=128,
     height=128,
@@ -67,7 +135,10 @@ def shape_precision_iovar(cfg: ngl.SceneCfg):
 
 
 def _draw_shape(geometry, color):
-    return ngl.DrawColor(color, geometry=geometry)
+    program = ngl.Program(vertex=get_shader("color.vert"), fragment=get_shader("color.frag"))
+    draw = ngl.Draw(geometry=geometry, program=program)
+    draw.update_frag_resources(color=ngl.UniformVec3(COLORS.sgreen), opacity=ngl.UniformFloat(1))
+    return draw
 
 
 @test_fingerprint(width=320, height=320)
@@ -197,39 +268,11 @@ def shape_geometry_normals_indices(cfg: ngl.SceneCfg):
 
 @test_fingerprint(width=320, height=320)
 @ngl.scene()
-def shape_geometry_with_drawother(cfg: ngl.SceneCfg):
-    cfg.aspect_ratio = (1, 1)
-
-    vertices_data = array.array("f")
-    uvcoords_data = array.array("f")
-    boundaries = (
-        (-1, 0, 0, 1),
-        (0, 1, 0, 1),
-        (-1, 0, -1, 0),
-        (0, 1, -1, 0),
-    )
-    for xmin, xmax, ymin, ymax in boundaries:
-        x0, y0 = cfg.rng.uniform(xmin, xmax), cfg.rng.uniform(ymin, ymax)
-        x1, y1 = cfg.rng.uniform(xmin, xmax), cfg.rng.uniform(ymin, ymax)
-        vertices_data.extend((0, 0, 0, x0, y0, 0, x1, y1, 0))
-        uvcoords_data.extend((0, 0, x0, y0, x1, y1))
-
-    geometry = ngl.Geometry(
-        vertices=ngl.BufferVec3(data=vertices_data),
-        uvcoords=ngl.BufferVec2(data=uvcoords_data),
-        topology="triangle_list",
-    )
-
-    return ngl.DrawColor(geometry=geometry)
-
-
-@test_fingerprint(width=320, height=320)
-@ngl.scene()
 def shape_diamond_colormask(cfg: ngl.SceneCfg):
     cfg.aspect_ratio = (1, 1)
     color_write_masks = ("r+g+b+a", "r+g+a", "g+b+a", "r+b+a")
-    geometry = ngl.Circle(npoints=5)
-    draw = ngl.DrawColor(COLORS.white, geometry=geometry)
+    shape = ngl.ShapeNGon(radius=0.8)
+    draw = ngl.DrawColor(COLORS.white, shape=shape, blending="src_over")
     scenes = [ngl.GraphicConfig(draw, color_write_mask=cwm) for cwm in color_write_masks]
     return autogrid_simple(scenes)
 

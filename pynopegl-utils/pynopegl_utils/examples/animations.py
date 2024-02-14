@@ -8,11 +8,8 @@ import pynopegl as ngl
 
 
 def _block(w, h, color, corner=None):
-    block_width = (w, 0, 0)
-    block_height = (0, h, 0)
-    block_corner = (-w / 2.0, -h / 2.0, 0) if corner is None else corner
-    block_quad = ngl.Quad(corner=block_corner, width=block_width, height=block_height)
-    block_draw = ngl.DrawColor(color=color, geometry=block_quad)
+    block_corner = (-w / 2.0, -h / 2.0) if corner is None else corner
+    block_draw = ngl.DrawColor(color=color, box=(block_corner[0], block_corner[1], w, h))
     return block_draw
 
 
@@ -84,10 +81,10 @@ def _get_easing_node(cfg: ngl.SceneCfg, easing, curve_zoom, color_program, nb_po
     curve.update_frag_resources(color=ucolor, opacity=ngl.UniformFloat(1))
 
     # Value cursor
-    y = 2 / 3.0 * pad_height
-    x = y * math.sqrt(3)
-    cursor_geometry = ngl.Triangle((-x, y, 0), (0, 0, 0), (-x, -y, 0))
-    cursor = ngl.DrawColor(color[:3], geometry=cursor_geometry, label="%s cursor" % easing)
+    radius = 2 / 3.0 * pad_height
+    shape = ngl.Rotate(ngl.ShapeTriangle(radius=radius), angle=-90)
+    cursor = ngl.DrawColor(color[:3], shape=shape, blending="src_over", label="%s cursor" % easing)
+    cursor = ngl.Translate(cursor, vector=(-radius, 0, 0))
 
     # Horizontal value line
     hline_data = array.array("f", (0, 0, 0, graph_size, 0, 0))

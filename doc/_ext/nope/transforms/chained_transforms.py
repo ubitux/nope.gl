@@ -11,8 +11,8 @@ def chained_transforms(cfg: ngl.SceneCfg):
     n = 10
     step = 360 / n
 
-    shape = ngl.Circle(radius=radius, npoints=128)
-    draw = ngl.DrawColor(geometry=shape)
+    shape = ngl.ShapeCircle(radius=radius)
+    draw = ngl.DrawColor(shape=shape, blending="src_over")
 
     for i in range(n):
         mid_time = cfg.duration / 2.0
