@@ -22,7 +22,7 @@
 #ifndef FILTERSCHAIN_H
 #define FILTERSCHAIN_H
 
-#include "internal.h"
+#include "darray.h"
 
 struct filterschain;
 
