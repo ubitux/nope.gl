@@ -498,6 +498,13 @@ int ngli_distmap_finalize(struct distmap *s)
         return 0;
 
     /*
+     * Padding needs to be the same length in both directions and for all
+     * shapes so that effects are consistent whatever the ratio or size of a
+     * given shape.
+     */
+    s->pad = NGLI_MAX(s->max_shape_w, s->max_shape_h) * PCENT_PADDING / 100;
+
+    /*
      * Assuming the path points are all within the view box
      * (0,0,max_shape_w,max_shape_h), the computed distance will never be larger
      * than the following:
@@ -516,13 +523,6 @@ int ngli_distmap_finalize(struct distmap *s)
     s->nb_rows = (int32_t)lrintf(sqrtf((float)nb_shapes));
     s->nb_cols = (int32_t)ceilf((float)nb_shapes / (float)s->nb_rows);
     ngli_assert(s->nb_rows * s->nb_cols >= nb_shapes);
-
-    /*
-     * Padding needs to be the same length in both directions and for all
-     * shapes so that effects are consistent whatever the ratio or size of a
-     * given shape.
-     */
-    s->pad = NGLI_MAX(s->max_shape_w, s->max_shape_h) * PCENT_PADDING / 100;
 
     /*
      * +1 represents the extra half texel on each side used to prevent texture
