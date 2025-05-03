@@ -130,6 +130,7 @@ static void set_segment_closing_flag(struct path *s)
 
 int ngli_path_move_to(struct path *s, const float *to)
 {
+    LOG(ERROR, "path.move_to(Vec2f(%g,%g)),", NGLI_ARG_VEC2(to));
     set_segment_closing_flag(s);
     memcpy(s->origin, to, sizeof(s->origin));
     memcpy(s->cursor, to, sizeof(s->cursor));
@@ -139,6 +140,7 @@ int ngli_path_move_to(struct path *s, const float *to)
 
 int ngli_path_line_to(struct path *s, const float *to)
 {
+    LOG(ERROR, "path.line_to(Vec2f(%g,%g)),", NGLI_ARG_VEC2(to));
     if (!memcmp(s->cursor, to, sizeof(s->cursor)))
         return 0;
 
@@ -154,6 +156,7 @@ int ngli_path_line_to(struct path *s, const float *to)
 
 int ngli_path_bezier2_to(struct path *s, const float *ctl, const float *to)
 {
+    LOG(ERROR, "path.bezier2(Vec2f(%g,%g), Vec2f(%g,%g)),", NGLI_ARG_VEC2(ctl), NGLI_ARG_VEC2(to));
     if (!memcmp(s->cursor, ctl, sizeof(s->cursor)) &&
         !memcmp(s->cursor, to, sizeof(s->cursor)))
         return 0;
@@ -170,6 +173,8 @@ int ngli_path_bezier2_to(struct path *s, const float *ctl, const float *to)
 
 int ngli_path_bezier3_to(struct path *s, const float *ctl0, const float *ctl1, const float *to)
 {
+    LOG(ERROR, "path.bezier3(Vec2f(%g,%g), Vec2f(%g,%g), Vec2f(%g,%g)),",
+        NGLI_ARG_VEC2(ctl0), NGLI_ARG_VEC2(ctl1), NGLI_ARG_VEC2(to));
     if (!memcmp(s->cursor, ctl0, sizeof(s->cursor)) &&
         !memcmp(s->cursor, ctl1, sizeof(s->cursor)) &&
         !memcmp(s->cursor, to, sizeof(s->cursor)))

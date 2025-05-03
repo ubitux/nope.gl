@@ -132,6 +132,16 @@ def text_bidi_arabic_english(cfg: ngl.SceneCfg):
     )
 
 
+@ngl.scene()
+def hey(cfg: ngl.SceneCfg):
+    return ngl.Text(
+        text="A",
+        # The Latin font is placed first so the fallback is actually tested (the
+        # Arabic font contains Latin letters)
+        font_faces=[ngl.FontFace("/usr/share/fonts/noto/NotoSerif-Regular.ttf")],
+    )
+
+
 @test_fingerprint(width=480, height=640, tolerance=1)
 @ngl.scene()
 def text_vertical_japanese(cfg: ngl.SceneCfg):
