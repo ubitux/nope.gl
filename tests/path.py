@@ -42,6 +42,49 @@ def _shape_variant_0(cfg: ngl.SceneCfg, *kfs):
     return ngl.DrawPath(path, viewbox=(-1, -1, 2, 1))
 
 
+@ngl.scene()
+def bla(cfg: ngl.SceneCfg):
+    keyframes = [
+        ngl.PathKeyMove((0.0, 0.0, 0.0)),
+        ngl.PathKeyLine((0.0, 3.03125, 0.0)),
+        ngl.PathKeyLine((1.375, 3.03125, 0.0)),
+        ngl.PathKeyBezier2((3.45312, 3.03125, 0.0), (4.5, 4.10938, 0.0)),
+        ngl.PathKeyBezier2((5.54688, 5.1875, 0.0), (6.84375, 8.64062, 0.0)),
+        ngl.PathKeyLine((22.8281, 51.4062, 0.0)),
+        ngl.PathKeyLine((28.4375, 51.4062, 0.0)),
+        ngl.PathKeyLine((44.7188, 6.84375, 0.0)),
+        ngl.PathKeyBezier2((45.5, 4.60938, 0.0), (46.6094, 3.8125, 0.0)),
+        ngl.PathKeyBezier2((47.7344, 3.03125, 0.0), (49.8281, 3.03125, 0.0)),
+        ngl.PathKeyLine((50.7656, 3.03125, 0.0)),
+        ngl.PathKeyLine((50.7656, 0.0, 0.0)),
+        ngl.PathKeyLine((30.9531, 0.0, 0.0)),
+        ngl.PathKeyLine((30.9531, 3.03125, 0.0)),
+        ngl.PathKeyLine((32.6094, 3.03125, 0.0)),
+        ngl.PathKeyBezier2((36.9375, 3.03125, 0.0), (36.9375, 6.48438, 0.0)),
+        ngl.PathKeyBezier2((36.9375, 7.0625, 0.0), (36.7812, 7.70312, 0.0)),
+        ngl.PathKeyBezier2((36.6406, 8.35938, 0.0), (36.3594, 9.14062, 0.0)),
+        ngl.PathKeyLine((33.4844, 17.2031, 0.0)),
+        ngl.PathKeyLine((14.5469, 17.2031, 0.0)),
+        ngl.PathKeyLine((11.8125, 9.64062, 0.0)),
+        ngl.PathKeyBezier2((11.1562, 7.92188, 0.0), (11.1562, 6.54688, 0.0)),
+        ngl.PathKeyBezier2((11.1562, 3.03125, 0.0), (15.9062, 3.03125, 0.0)),
+        ngl.PathKeyLine((17.5625, 3.03125, 0.0)),
+        ngl.PathKeyLine((17.5625, 0.0, 0.0)),
+        ngl.PathKeyLine((0.0, 0.0, 0.0)),
+        ngl.PathKeyMove((15.9062, 20.8125, 0.0)),
+        ngl.PathKeyLine((32.1875, 20.8125, 0.0)),
+        ngl.PathKeyLine((27.7188, 33.4062, 0.0)),
+        ngl.PathKeyBezier2((26.5625, 36.5781, 0.0), (25.625, 39.375, 0.0)),
+        ngl.PathKeyBezier2((24.7031, 42.1875, 0.0), (24.125, 44.7812, 0.0)),
+        ngl.PathKeyBezier2((23.6094, 42.1875, 0.0), (22.8125, 39.8125, 0.0)),
+        ngl.PathKeyBezier2((22.0312, 37.4375, 0.0), (20.8125, 34.0625, 0.0)),
+        ngl.PathKeyLine((15.9062, 20.8125, 0.0)),
+        ngl.PathKeyClose(),
+    ]
+    path = ngl.Path(keyframes)
+    return ngl.DrawPath(path, viewbox=(0.0, 0.0, 55.0, 55.0), aspect_ratio=cfg.aspect_ratio)
+
+
 @test_fingerprint(width=640, height=640)
 @ngl.scene()
 def path_shape_0(cfg: ngl.SceneCfg):
