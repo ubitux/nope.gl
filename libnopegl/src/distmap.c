@@ -474,14 +474,15 @@ static int get_preferred_distmap_format(const struct distmap *s)
     struct gpu_ctx *gpu_ctx = s->ctx->gpu_ctx;
 
     static const int formats[] = {
-            NGLI_GPU_FORMAT_R32_SFLOAT,
-            NGLI_GPU_FORMAT_R16_SFLOAT,
-            NGLI_GPU_FORMAT_R8_UNORM,
+        // NGLI_GPU_FORMAT_R32_SFLOAT,
+        NGLI_GPU_FORMAT_R16_SFLOAT,
+        NGLI_GPU_FORMAT_R8_UNORM,
     };
     for (size_t i = 0; i < NGLI_ARRAY_NB(formats); i++) {
         const uint32_t features = ngli_gpu_ctx_get_format_features(gpu_ctx, formats[i]);
         if (NGLI_HAS_ALL_FLAGS(features, DISTMAP_FEATURES))
             return formats[i];
+        LOG(ERROR, ">>> not supported for format %d", formats[i]);
     }
     ngli_assert(0);
 }
