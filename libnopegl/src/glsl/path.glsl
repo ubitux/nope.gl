@@ -36,6 +36,23 @@ float border(float d, float blur)
  */
 vec4 get_path_color(vec2 dist, vec4 color, vec4 outline, vec4 glow, float blur)
 {
+    float ow = outline.a;
+
+    float aa0 = fwidth(dist.x);
+    float aa1 = fwidth(dist.y);
+
+    float fill_mask = ngli_linearstep(0.0, aa0, dist.x);
+
+    float outline_mask = ngli_linearstep(-ow - aa1, -ow + aa1, dist.y) - fill_mask;
+
+    return color * fill_mask + vec4(outline.rgb, 1.0) * outline_mask;
+
+#if 0
+    vec3  rgb = color.rgb * fill_mask + outline.rgb * outline_mask;
+    float a   = color.a   * fill_mask + outline.a   * outline_mask;
+
+    return vec4(rgb, a);
+
     float opacity = color.a; // overall opacity
     float outline_width = outline.a;
 
@@ -59,4 +76,5 @@ vec4 get_path_color(vec2 dist, vec4 color, vec4 outline, vec4 glow, float blur)
     }
 
     return out_color;
+#endif
 }
