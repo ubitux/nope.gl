@@ -323,13 +323,13 @@ int root_find2(out vec2 roots, float a, float b, float c)
 
     float m = -b / (2.0 * a);
     float delta = m*m - c / a;
-    if (close_to_zero(delta)) {
-        roots.x = m;
-        return 1;
-    }
     if (delta < 0.0)
         return 0;
     float z = sqrt(delta);
+    if (close_to_zero(z)) {
+        roots.x = m;
+        return 1;
+    }
     roots = m + vec2(-z, z);
     return 2;
 }
