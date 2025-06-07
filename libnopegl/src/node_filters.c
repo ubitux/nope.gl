@@ -339,37 +339,17 @@ static int filtercolormap_init(struct ngl_node *node)
     ngli_bstr_print(str, "vec4 filter_colormap(vec4 color, vec2 coords");
     for (size_t i = 0; i < o->nb_colorkeys; i++)
         ngli_bstr_printf(str, ", float pos%zu, vec3 color%zu, float opacity%zu", i, i, i);
-    ngli_bstr_print(str, ")\n{\n"
-                         I "float t_prv = 1.0, t_nxt = 0.0;\n"
-                         I "vec4 v_prv, v_nxt;\n"
-                         "\n");
+    ngli_bstr_print(str, ")\n{\n");
 
     /* Convert input color to grayscale to obtain the interpolation index */
     ngli_bstr_print(str, I "float t = dot(color.rgb, ngli_luma_weights);\n\n");
 
-    /* Switch colors to linear space and saturate pos within [0,1] */
-    for (size_t i = 0; i < o->nb_colorkeys; i++) {
-        ngli_bstr_printf(str, I "pos%zu = ngli_sat(pos%zu);\n", i, i);
-        ngli_bstr_printf(str, I "color%zu = ngli_srgb2linear(color%zu);\n", i, i);
-    }
-
-    /* Identify left-most and right-most knots */
-    for (size_t i = 0; i < o->nb_colorkeys; i++) {
-        /* The '=' are here to make sure we enter in the loop at least once */
-        ngli_bstr_printf(str, I "if (pos%zu <= t_prv) { t_prv = pos%zu; v_prv = vec4(color%zu, opacity%zu); }\n", i, i, i, i);
-        ngli_bstr_printf(str, I "if (pos%zu >= t_nxt) { t_nxt = pos%zu; v_nxt = vec4(color%zu, opacity%zu); }\n", i, i, i, i);
-    }
-
-    /* Identify the two closest surrounding knots (if any) */
-    for (size_t i = 0; i < o->nb_colorkeys; i++) {
-        /* The '=' are here to make sure we honor the knot if we are exactly on it */
-        ngli_bstr_printf(str, I "if (pos%zu <= t && pos%zu > t_prv) { t_prv = pos%zu; v_prv = vec4(color%zu, opacity%zu); }\n", i, i, i, i, i);
-        ngli_bstr_printf(str, I "if (pos%zu >= t && pos%zu < t_nxt) { t_nxt = pos%zu; v_nxt = vec4(color%zu, opacity%zu); }\n", i, i, i, i, i);
-    }
-
-    /* Final interpolation: simple hermite spline */
-    ngli_bstr_print(str, I "vec4 ret = mix(v_prv, v_nxt, smoothstep(t_prv, t_nxt, t));\n"
-                         I "return vec4(ngli_linear2srgb(ret.rgb), 1.0) * ret.a;\n"
+    ngli_bstr_print(str, I "vec4 c = vec4(ngli_srgb2linear(color0), opacity0);\n");
+    for (size_t i = 1; i < o->nb_colorkeys; i++)
+        ngli_bstr_printf(str, I "c = mix(c, vec4(ngli_srgb2linear(color%zu), opacity%zu), "
+                                "smoothstep(ngli_sat(pos%zu), ngli_sat(pos%zu), t));\n",
+                                 i, i, i - 1, i);
+    ngli_bstr_print(str, I "return vec4(ngli_linear2srgb(c.rgb), 1.0) * c.a;\n"
                          "}\n");
 
     s->filter.code = ngli_bstr_strdup(str);
