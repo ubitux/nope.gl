@@ -178,3 +178,21 @@ def text_animated_fixed(cfg: ngl.SceneCfg):
     return ngl.Rotate(
         ngl.Text("Hey", scale_mode="fixed", font_scale=8), angle=ngl.AnimatedFloat(animkf), axis=(1, 1, 1)
     )
+
+
+@ngl.scene()
+def text_sdf_scale(cfg: ngl.SceneCfg):
+    cfg.aspect_ratio = (2, 1)
+    s = 1 / 3
+    t0 = ngl.Text(
+        text="i",
+        box=(-1 + s / 2, -1 + s / 2, 1 * s, 2 * s),
+        debug=True,
+    )
+    t1 = ngl.Text(
+        text="i",
+        box=(0 + s / 2, -1 + s / 2, 1 * s, 2 * s),
+        font_faces=[ngl.FontFace(_LATIN_FONT.as_posix())],
+        debug=True,
+    )
+    return ngl.Group(children=[t0, t1])

@@ -483,11 +483,8 @@ int ngli_distmap_finalize(struct distmap *s)
      * (0,0,max_shape_w,max_shape_h), the computed distance will never be larger
      * than the following:
      */
-    const float longest_distance = hypotf(
-        (float)(s->max_shape_w + s->pad) + .5f,
-        (float)(s->max_shape_h + s->pad) + .5f
-    );
-    s->scale = 1.f / (float)longest_distance;
+    const float longest_distance = hypotf((float)s->max_shape_w, (float)s->max_shape_h);
+    s->scale = 2.f / (float)longest_distance;
 
     /*
      * Define texture dimension (mostly squared).

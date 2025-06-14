@@ -225,3 +225,23 @@ def path_open_and_effects(cfg: ngl.SceneCfg):
         glow=0.2,
         glow_color=(1, 0.5, 0),
     )
+
+
+@ngl.scene()
+def path_sdf_scale(cfg: ngl.SceneCfg):
+    cfg.aspect_ratio = (1, 1)
+    from math import sqrt
+
+    sq3 = sqrt(3)
+    s = 1.0
+    A = (0, sq3 / 3 * s, 0)
+    B = (-s / 2, -sq3 / 6 * s, 0)
+    C = (s / 2, -sq3 / 6 * s, 0)
+    keyframes = [
+        ngl.PathKeyMove(to=A),
+        ngl.PathKeyLine(to=B),
+        ngl.PathKeyLine(to=C),
+        ngl.PathKeyClose(),
+    ]
+    path = ngl.Path(keyframes)
+    return ngl.DrawPath(path, viewbox=(-1, -1, 2, 2), debug=True)
