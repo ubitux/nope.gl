@@ -55,6 +55,7 @@ struct pipeline_desc_common {
     struct pipeline_compat *pipeline_compat;
     int32_t modelview_matrix_index;
     int32_t projection_matrix_index;
+    int32_t debug_index;
 };
 
 struct pipeline_desc_bg {
@@ -99,6 +100,7 @@ struct text_opts {
     enum text_valign valign;
     enum text_halign halign;
     enum writing_mode writing_mode;
+    int debug;
 };
 
 struct text_priv {
@@ -221,6 +223,9 @@ static const struct node_param text_params[] = {
     {"writing_mode", NGLI_PARAM_TYPE_SELECT, OFFSET(writing_mode), {.i32=NGLI_TEXT_WRITING_MODE_HORIZONTAL_TB},
                      .choices=&writing_mode_choices,
                      .desc=NGLI_DOCSTRING("direction flow per character and line")},
+    {"debug",        NGLI_PARAM_TYPE_BOOL, OFFSET(debug),
+                     .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE,
+                     .desc=NGLI_DOCSTRING("debug the signed distance field")},
     {NULL}
 };
 
@@ -467,6 +472,7 @@ static int init_subdesc(struct ngl_node *node,
 
     desc->modelview_matrix_index  = ngpu_pgcraft_get_uniform_index(desc->crafter, "modelview_matrix", NGPU_PROGRAM_STAGE_VERT);
     desc->projection_matrix_index = ngpu_pgcraft_get_uniform_index(desc->crafter, "projection_matrix", NGPU_PROGRAM_STAGE_VERT);
+    desc->debug_index             = ngpu_pgcraft_get_uniform_index(desc->crafter, "debug", NGPU_PROGRAM_STAGE_FRAG);
 
     return 0;
 }
@@ -532,6 +538,7 @@ static int fg_prepare(struct ngl_node *node, struct pipeline_desc_fg *desc)
     const struct ngpu_pgcraft_uniform uniforms[] = {
         {.name = "modelview_matrix",  .type = NGPU_TYPE_MAT4, .stage = NGPU_PROGRAM_STAGE_VERT, .data = NULL},
         {.name = "projection_matrix", .type = NGPU_TYPE_MAT4, .stage = NGPU_PROGRAM_STAGE_VERT, .data = NULL},
+        {.name = "debug",             .type = NGPU_TYPE_BOOL, .stage = NGPU_PROGRAM_STAGE_FRAG},
     };
 
     const struct ngpu_pgcraft_texture textures[] = {
@@ -743,6 +750,7 @@ static void text_draw(struct ngl_node *node)
         struct pipeline_desc_fg *fg_desc = &desc->fg;
         ngli_pipeline_compat_update_uniform(fg_desc->common.pipeline_compat, fg_desc->common.modelview_matrix_index, modelview_matrix);
         ngli_pipeline_compat_update_uniform(fg_desc->common.pipeline_compat, fg_desc->common.projection_matrix_index, projection_matrix);
+        ngli_pipeline_compat_update_uniform(fg_desc->common.pipeline_compat, fg_desc->common.debug_index, &o->debug);
         ngli_pipeline_compat_draw(fg_desc->common.pipeline_compat, 4, (uint32_t)s->nb_chars, 0);
     }
 }
