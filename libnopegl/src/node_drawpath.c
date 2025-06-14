@@ -74,6 +74,7 @@ struct drawpath_opts {
     float glow_color[3];
     struct ngl_node *blur_node;
     float blur;
+    int debug;
 };
 
 struct drawpath_priv {
@@ -87,6 +88,7 @@ struct drawpath_priv {
     int modelview_matrix_index;
     int projection_matrix_index;
     int transform_index;
+    int debug_index;
     int coords_index;
     struct darray pipeline_descs;
 };
@@ -131,6 +133,9 @@ static const struct node_param drawpath_params[] = {
     {"blur",         NGLI_PARAM_TYPE_F32, OFFSET(blur_node),
                      .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE | NGLI_PARAM_FLAG_ALLOW_NODE,
                      .desc=NGLI_DOCSTRING("path blur")},
+    {"debug",        NGLI_PARAM_TYPE_BOOL, OFFSET(debug),
+                     .flags=NGLI_PARAM_FLAG_ALLOW_LIVE_CHANGE,
+                     .desc=NGLI_DOCSTRING("debug the signed distance field")},
     {NULL}
 };
 
@@ -237,8 +242,8 @@ static int drawpath_init(struct ngl_node *node)
         {.name="projection_matrix", .type=NGPU_TYPE_MAT4,  .stage=NGPU_PROGRAM_STAGE_VERT},
         {.name="transform",         .type=NGPU_TYPE_VEC4,  .stage=NGPU_PROGRAM_STAGE_VERT},
 
-        {.name="debug",             .type=NGPU_TYPE_BOOL,  .stage=NGPU_PROGRAM_STAGE_FRAG},
         {.name="coords",            .type=NGPU_TYPE_VEC4,  .stage=NGPU_PROGRAM_STAGE_FRAG},
+        {.name="debug",             .type=NGPU_TYPE_BOOL,  .stage=NGPU_PROGRAM_STAGE_FRAG},
 
         {.name="color",             .type=NGPU_TYPE_VEC3,  .stage=NGPU_PROGRAM_STAGE_FRAG, .data=ngli_node_get_data_ptr(o->color_node, o->color)},
         {.name="opacity",           .type=NGPU_TYPE_F32,   .stage=NGPU_PROGRAM_STAGE_FRAG, .data=ngli_node_get_data_ptr(o->opacity_node, &o->opacity)},
@@ -299,6 +304,7 @@ static int drawpath_init(struct ngl_node *node)
     s->transform_index         = ngpu_pgcraft_get_uniform_index(s->crafter, "transform", NGPU_PROGRAM_STAGE_VERT);
 
     s->coords_index = ngpu_pgcraft_get_uniform_index(s->crafter, "coords", NGPU_PROGRAM_STAGE_FRAG);
+    s->debug_index  = ngpu_pgcraft_get_uniform_index(s->crafter, "debug",  NGPU_PROGRAM_STAGE_FRAG);
 
     ret = build_uniforms_map(s);
     if (ret < 0)
@@ -357,6 +363,7 @@ static void drawpath_draw(struct ngl_node *node)
     struct pipeline_desc *descs = ngli_darray_data(&s->pipeline_descs);
     struct pipeline_desc *desc = &descs[ctx->rnode_pos->id];
     struct pipeline_compat *pl_compat = desc->pipeline_compat;
+    const struct drawpath_opts *o = node->opts;
 
     const float *modelview_matrix  = ngli_darray_tail(&ctx->modelview_matrix_stack);
     const float *projection_matrix = ngli_darray_tail(&ctx->projection_matrix_stack);
@@ -373,6 +380,7 @@ static void drawpath_draw(struct ngl_node *node)
         (float)s->atlas_coords[3] / (float)texture->params.height,
     };
 
+    ngli_pipeline_compat_update_uniform(desc->pipeline_compat, s->debug_index,  &o->debug);
     ngli_pipeline_compat_update_uniform(desc->pipeline_compat, s->coords_index, atlas_coords);
 
     const struct uniform_map *map = ngli_darray_data(&s->uniforms_map);

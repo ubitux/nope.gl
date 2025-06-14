@@ -23,6 +23,15 @@
 #include helper_misc_utils.glsl
 #include helper_srgb.glsl
 
+vec4 dist_debug(float d)
+{
+    vec3 col = d < 0.0 ? ngli_srgb2linear(vec3(0.9,0.6,0.3)) : ngli_srgb2linear(vec3(0.65,0.85,1.0));
+    col *= 1.0 - exp(-6.0*abs(d));
+    col *= 0.8 + 0.2*cos(120.0*d);
+    col = mix(col, vec3(1.0), 1.0-smoothstep(0.0,0.01,abs(d)));
+    return vec4(ngli_linear2srgb(col), 1.0);
+}
+
 /*
  * dist: distance to the shape (negative outside, positive inside)
  * color: RGB color, opacity stored in the alpha channel (not premultiplied)
@@ -32,6 +41,9 @@
  */
 vec4 get_path_color(float dist, vec4 color, vec4 outline, vec4 glow, float blur, float outline_pos)
 {
+    if (debug)
+        return dist_debug(dist);
+
     float aa = fwidth(dist); // pixel width estimates
     float w = max(aa, blur) * 0.5; // half diffuse width
     vec2 d = dist + mix(vec2(-1,0), vec2(0,1), ngli_sat(outline_pos)) * outline.a; // inner and outer boundaries
